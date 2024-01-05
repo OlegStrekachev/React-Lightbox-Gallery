@@ -1,6 +1,6 @@
-## TypeScript and Vite Configuration for Absolute Imports
+## Configuring Absolute Imports in TypeScript and Vite
 
-### TypeScript (`tsconfig.json`):
+### TypeScript Setup (`tsconfig.json`):
 
 ```json
 {
@@ -9,31 +9,25 @@
     "paths": {
       "@/*": ["./src/*"]
     },
+    // Additional compiler options...
     "types": ["node"],
-    "target": "ES2020",
-    "useDefineForClassFields": true,
-    "lib": ["ES2020", "DOM", "DOM.Iterable"],
-    "module": "ESNext",
-    "skipLibCheck": true,
-    "moduleResolution": "bundler",
-    "allowImportingTsExtensions": true,
-    "resolveJsonModule": true,
-    "isolatedModules": true,
-    "noEmit": true,
-    "jsx": "react-jsx",
     "strict": true,
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
-    "noFallthroughCasesInSwitch": true
+    // ... other options ...
   },
   "include": ["src"],
-  "references": [{ "path": "./tsconfig.node.json" }]
+  "references": [
+    { "path": "./tsconfig.node.json" }
+  ]
 }
 ```
 
-This configuration sets up TypeScript for a project with a custom path alias (`@`) pointing to the `src` folder. It includes Node.js type definitions and various settings for strict type checking and JSX support.
+- **Purpose**: Configures TypeScript for absolute imports using the `@` alias for the `src` directory.
+- **Key Options**:
+  - `baseUrl` and `paths` establish the base directory and path aliases.
+  - `types`: Includes Node.js types for Node-specific globals like `__dirname`.
+  - `strict`: Enables strict type-checking options.
 
-### Vite (`vite.config.ts`):
+### Vite Setup (`vite.config.ts`):
 
 ```typescript
 import { defineConfig } from 'vite';
@@ -50,19 +44,14 @@ export default defineConfig({
 });
 ```
 
-The Vite configuration aligns with the TypeScript setup for path resolution. It includes the React plugin and sets up an alias for `@` to resolve to the `src` directory.
+- **Purpose**: Aligns Vite's module resolution with TypeScript's, allowing the use of the `@` alias for absolute imports.
+- **Configuration**:
+  - `resolve.alias`: Maps `@` to the `src` directory.
+  - Includes the React plugin for React-specific optimizations.
 
-### Explanation:
+### Overview:
 
-- **TypeScript Configuration:**
-  - Uses `baseUrl` and `paths` to set up the `@` alias.
-  - Includes Node.js types for compatibility with Node-specific elements like `__dirname`.
-  - Configures the compiler for modern JavaScript and JSX.
-
-- **Vite Configuration:**
-  - Uses `defineConfig` for better typing support.
-  - Adds the React plugin for React-specific features.
-  - Sets up an alias for `@` to resolve to the `src` directory, matching the TypeScript path configuration.
-
-- **Project References:**
-  - The `references` property in `tsconfig.json` points to `tsconfig.node.json`, indicating dependencies between multiple TypeScript projects, typically used in larger codebases or monorepos.
+- Both TypeScript and Vite require separate configurations for absolute imports to work consistently across the development environment.
+- `tsconfig.json` configures TypeScript's compiler to understand the `@` alias during type checking and compilation.
+- `vite.config.ts` ensures Vite resolves the `@` alias correctly during module bundling and development server operations.
+- This setup provides a seamless development experience with improved import path clarity and consistency.

@@ -1,0 +1,1 @@
+export { GenericList } from "./components/GenericList";
