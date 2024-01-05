@@ -23,12 +23,10 @@ export const GenericList = () => {
       <h1>Generic List</h1>
       <ul className={styles.list}>
         {data.results?.map((item: Character) => (
-          <ul>
-            <li key={item.name}>
-              <h5> Name: {item.name} </h5>
-              <h5> Birth Year: {item.birth_year} </h5>
-            </li>
-          </ul>
+          <li key={item.name}>
+            <h5> Name: {item.name} </h5>
+            <h5> Birth Year: {item.birth_year} </h5>
+          </li>
         ))}
       </ul>
     </div>
