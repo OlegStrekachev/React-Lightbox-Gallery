@@ -2,7 +2,7 @@ import styles from "./GenericList.module.css";
 
 import { useGetExampleListQuery } from "@/api/api";
 
-interface Character {
+type Character = {
   name: string;
   birth_year: string | number;
 }
