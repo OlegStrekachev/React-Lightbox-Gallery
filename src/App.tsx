@@ -1,7 +1,7 @@
-import { GenericList } from "@/features/LandingPage";
+import { GalleryContainer } from "@/features/gallery";
 
 function App() {
-  return <GenericList />;
+  return <GalleryContainer />;
 }
 
 export default App;

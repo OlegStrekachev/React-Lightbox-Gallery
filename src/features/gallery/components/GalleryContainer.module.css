@@ -1,0 +1,15 @@
+
+.galleryContainer {
+    margin: 1rem;
+    white-space: nowrap;
+    overflow: hidden;
+    display: flex;
+    gap: 1rem;
+}
+
+.galleryContainer > img {
+    width: 200px;
+    height: 200px;
+    object-fit: cover;
+    cursor: pointer;
+}
