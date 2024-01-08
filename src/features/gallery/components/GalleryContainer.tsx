@@ -31,7 +31,6 @@ export const GalleryContainer = () => {
 
   const galleryContainerRef = useRef<HTMLDivElement>(null);
 
-
   // function to scroll to the image with the given id
   function scrollToId(imageNode: HTMLImageElement) {
     imageNode.scrollIntoView({
@@ -119,7 +118,7 @@ export const GalleryContainer = () => {
 
   const onSlideRightClick = () => {
     const nextIndex = currentImageIndex + 1;
-    if (nextIndex < imageModules.length - 1) {
+    if (nextIndex < imageModules.length) {
       setCurrentImageIndex(nextIndex);
       scrollToId(imageRefs.get(nextIndex));
     }
@@ -127,8 +126,8 @@ export const GalleryContainer = () => {
 
   const onSlideLeftClick = () => {
     const previousIndex = currentImageIndex - 1;
-    if (previousIndex >= 1) {
-      setCurrentImageIndex(previousIndex - 1);
+    if (previousIndex >= 0) {
+      setCurrentImageIndex(previousIndex);
       scrollToId(imageRefs.get(previousIndex));
     }
   };
@@ -150,27 +149,29 @@ export const GalleryContainer = () => {
         <img src={SlideRightIcon} alt="Slide Right" />
       </button>
 
-      <div
-        ref={galleryContainerRef}
-        className={styles.galleryContainer}
-        onPointerDown={onDragStart}
-        onPointerMove={onDragMove}
-        onPointerUp={onDragEnd}
-      >
-        {imageModules.map((imageModule, index: number) => (
-          <img
-            key={index}
-            ref={(el) => {
-              if (el) {
-                imageRefs.set(index, el);
-                reverseImageRefs.set(el, index);
-              }
-            }}
-            src={imageModule.default}
-            alt="Gallery item"
-            draggable="false"
-          />
-        ))}
+      <div className={styles.carouselWrapper}>
+        <div
+          ref={galleryContainerRef}
+          className={styles.galleryContainer}
+          onPointerDown={onDragStart}
+          onPointerMove={onDragMove}
+          onPointerUp={onDragEnd}
+        >
+          {imageModules.map((imageModule, index: number) => (
+            <img
+              key={index}
+              ref={(el) => {
+                if (el) {
+                  imageRefs.set(index, el);
+                  reverseImageRefs.set(el, index);
+                }
+              }}
+              src={imageModule.default}
+              alt="Gallery item"
+              draggable="false"
+            />
+          ))}
+        </div>
       </div>
     </div>
   );
