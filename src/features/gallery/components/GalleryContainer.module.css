@@ -1,15 +1,76 @@
+.galleryWrapper {
+  height: 100vh;
+  display: grid;
+  grid-template-columns: 1fr 10fr 1fr;
+  grid-template-rows: 7fr 3fr;
+}
+
+.mainImage {
+  grid-area: 1 / 2 / 2 / 3;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden;
+}
+
+.mainImage > img {
+  height: 100%;
+  max-width: 100%;
+  object-fit: contain;
+}
 
 .galleryContainer {
-    margin: 1rem;
-    white-space: nowrap;
-    overflow: hidden;
-    display: flex;
-    gap: 1rem;
+  grid-area: 2 / 1 / 3 / -1;
+  width: 100%;
+  padding: 1rem;
+  white-space: nowrap;
+  overflow-x: hidden;
+  display: flex;
+  gap: 1rem;
 }
 
 .galleryContainer > img {
-    width: 200px;
-    height: 200px;
-    object-fit: cover;
-    cursor: pointer;
+  height: 100px;
+  aspect-ratio: 1/1;
+  object-fit: cover;
+  cursor: pointer;
+}
+
+.slideRightIcon {
+  grid-area: 1 / 3 / 2 / 4;
+  align-self: center;
+  justify-self: center;
+  width: 100%;
+  padding: 1rem;
+  background: none;
+  color: inherit;
+  border: none;
+  cursor: pointer;
+  outline: inherit;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.slideLeftIcon {
+  transform: scaleX(-1);
+  grid-area: 1 / 1 / 2 / 2;
+  align-self: center;
+  justify-self: center;
+  width: 100%;
+  padding: 1rem;
+  background: none;
+  color: inherit;
+  border: none;
+  cursor: pointer;
+  outline: inherit;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.slideRightIcon > img,
+.slideLeftIcon > img {
+  width: 100%;
+  object-fit: cover;
 }

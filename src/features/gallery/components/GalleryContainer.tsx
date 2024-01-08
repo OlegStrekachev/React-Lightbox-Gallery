@@ -1,5 +1,7 @@
 import styles from "./GalleryContainer.module.css";
 import { useRef, useState } from "react";
+// Import SVG as a URL
+import SlideRightIcon from "../assets/vector/slideRightIcon.svg";
 
 // Define the type for the imported image modules
 type ImageModule = {
@@ -29,6 +31,7 @@ export const GalleryContainer = () => {
 
   const galleryContainerRef = useRef<HTMLDivElement>(null);
 
+
   // function to scroll to the image with the given id
   function scrollToId(imageNode: HTMLImageElement) {
     imageNode.scrollIntoView({
@@ -41,7 +44,11 @@ export const GalleryContainer = () => {
   //  function to determine the index of the closest gallery image to the center of the screen (for now let's assume the center of the screen is the center of the gallery container)
 
   const findClosestImageIndex = (): number | null => {
-    if (!galleryContainerRef.current) return null;
+    // Assign to a local variable to ensure non-null value within the loop
+    const galleryCurrent = galleryContainerRef.current;
+
+    // Early return if galleryCurrent is null
+    if (!galleryCurrent) return null;
 
     let closestDistance = Infinity;
     let closestImageIndex: number | null = null;
@@ -51,8 +58,8 @@ export const GalleryContainer = () => {
       const imgCenterX = imgRectModel.left + imgRectModel.width / 2;
 
       const galleryCenter =
-        galleryContainerRef.current!.getBoundingClientRect().left +
-        galleryContainerRef.current!.clientWidth / 2;
+        galleryCurrent.getBoundingClientRect().left +
+        galleryCurrent.clientWidth / 2;
       const distance = Math.abs(imgCenterX - galleryCenter);
 
       if (distance < closestDistance) {
@@ -103,14 +110,46 @@ export const GalleryContainer = () => {
       setCurrentImageIndex(clickedImageIndex);
       scrollToId(event.target as HTMLImageElement);
     }
- 
+
     setInitiatedInteraction(false);
     setIsDragging(false);
   };
 
+  // Defining click handlers for the arrow buttons to slide the gallery
+
+  const onSlideRightClick = () => {
+    const nextIndex = currentImageIndex + 1;
+    if (nextIndex < imageModules.length - 1) {
+      setCurrentImageIndex(nextIndex);
+      scrollToId(imageRefs.get(nextIndex));
+    }
+  };
+
+  const onSlideLeftClick = () => {
+    const previousIndex = currentImageIndex - 1;
+    if (previousIndex >= 1) {
+      setCurrentImageIndex(previousIndex - 1);
+      scrollToId(imageRefs.get(previousIndex));
+    }
+  };
+
   return (
     <div className={styles.galleryWrapper}>
-      <div className={styles.mainImage}></div>
+      <div className={styles.mainImage}>
+        {imageModules[currentImageIndex] && (
+          <img
+            src={imageModules[currentImageIndex].default}
+            alt={`Gallery item ${currentImageIndex}`}
+          />
+        )}
+      </div>
+      <button className={styles.slideRightIcon} onClick={onSlideRightClick}>
+        <img src={SlideRightIcon} alt="Slide Right" />
+      </button>
+      <button className={styles.slideLeftIcon} onClick={onSlideLeftClick}>
+        <img src={SlideRightIcon} alt="Slide Right" />
+      </button>
+
       <div
         ref={galleryContainerRef}
         className={styles.galleryContainer}
