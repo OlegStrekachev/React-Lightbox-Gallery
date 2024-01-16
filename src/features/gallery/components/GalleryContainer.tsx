@@ -1,5 +1,5 @@
 import styles from "./GalleryContainer.module.css";
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 // Import SVG as a URL
 import SlideRightIcon from "../assets/vector/slideRightIcon.svg";
 
@@ -24,15 +24,29 @@ export const GalleryContainer = () => {
   const [moveStartX, setMoveStartX] = useState<number>(0);
 
   const [isDragging, setIsDragging] = useState(false);
+  const [isDraggable, setIsDraggable] = useState(true);
   const [currentTranslateX, setCurrentTranslateX] = useState<number>(0);
-  const [dragMovementDistance, setDragMovementDistance] = useState<number>(0);
   const [currentImageIndex, setCurrentImageIndex] = useState<number>(0);
+
+  const [shouldCenterImage, setShouldCenterImage] = useState(false);
 
   const imageRefs = useRef(new Map<number, HTMLImageElement>()).current;
   const reverseImageRefs = useRef(new Map<HTMLImageElement, number>()).current;
   const galleryContainerRef = useRef<HTMLDivElement>(null);
 
-  // function to determine the index of the closest gallery image to the center of the screen (for now let's assume the center of the screen is the center of the gallery container)
+  // UseEffect to center the image when the currentImageIndex changes
+
+  useEffect(() => {
+    if (shouldCenterImage && currentImageIndex !== null) {
+      setIsDraggable(false);
+      const closestImage = imageRefs.get(currentImageIndex);
+      if (closestImage && galleryContainerRef.current) {
+        scrollImageToCenter(closestImage);
+      }
+      setShouldCenterImage(false);
+      setIsDraggable(true);
+    }
+  }, [shouldCenterImage, currentImageIndex]);
 
   const findClosestImageIndex = (): number | null => {
     if (galleryContainerRef.current) {
@@ -61,24 +75,22 @@ export const GalleryContainer = () => {
   const scrollImageToCenter = (image: HTMLImageElement) => {
     if (galleryContainerRef.current) {
       const imageRect = image.getBoundingClientRect();
-      console.log("Image rect", imageRect);
       const imageCenter = imageRect.left + imageRect.width / 2;
       const middleOfTheViewport = window.innerWidth / 2;
       const movementDistance = middleOfTheViewport - imageCenter;
-      galleryContainerRef.current.style.transform = `translateX(${
-        currentTranslateX + movementDistance
-      }`;
-      setCurrentTranslateX(
-        (prevTranslateX) => prevTranslateX + movementDistance
-      );
+      const newTranslateX = currentTranslateX + movementDistance;
+      galleryContainerRef.current.style.transform = `translateX(${newTranslateX}px)`;
+      // Update state after applying the transformation
+      setCurrentTranslateX(newTranslateX);
     }
   };
-
   // defining click and drag events handlers for the gallery container
 
   const onDragStart = (event: React.MouseEvent<HTMLDivElement>) => {
     // Apply the new transformation
     if (galleryContainerRef.current) {
+      galleryContainerRef.current.style.transition = "none";
+
       setMouseWasDown(true);
       setMoveStartX(event.clientX);
       const galleryContainerCurrentTranslateX = window
@@ -93,9 +105,11 @@ export const GalleryContainer = () => {
       console.log("The element is not rendered yet or the ref is not attached");
     }
   };
-
+  
+  const movementDistanceRef = useRef<number>(0);
+  
   const onDragMove = (event: React.MouseEvent<HTMLDivElement>) => {
-    if (mouseWasDown) {
+    if (mouseWasDown && isDraggable) {
       const movementDistance = event.clientX - moveStartX;
 
       // Check if any significant movement has been made
@@ -105,49 +119,49 @@ export const GalleryContainer = () => {
       }
 
       if (isDragging) {
+        const passingByImageIndex = findClosestImageIndex();
+        setCurrentImageIndex(passingByImageIndex);
         galleryContainerRef.current.style.transform = `translateX(${
           currentTranslateX + movementDistance
         }px)`;
       }
-      setDragMovementDistance(movementDistance);
     }
   };
-  
 
   const onDragEnd = (event: React.MouseEvent<HTMLDivElement>) => {
     setMouseWasDown(false);
+    const movementDistance = event.clientX - moveStartX;
+    const newTranslateX = currentTranslateX + movementDistance;
+    setCurrentTranslateX(newTranslateX);
 
     if (isDragging) {
-      // Drag Ended Logic
-      const closestIndex = findClosestImageIndex();
-      if (closestIndex !== null) {
-        console.log("Closest image index", imageRefs.get(closestIndex));
-        scrollImageToCenter(imageRefs.get(closestIndex));
-        setCurrentImageIndex(closestIndex);
-        console.log(
-          "Drag action was ended.",
-          `Drag distance: ${dragMovementDistance}`,
-          `Closest image to center index: ${closestIndex}`
-        );
+      console.log("Drag action was ended");
+      const closestImageIndex = findClosestImageIndex();
+      if (closestImageIndex !== null) {
+        console.log("Closest image index is", closestImageIndex);
+        setShouldCenterImage(true);
+        galleryContainerRef.current.style.transition =
+          "transform 0.2s ease-in-out";
       }
-    } else {
-      // Click Logic
-      console.log("Click is registered", dragMovementDistance);
-      // If you have additional logic for handling clicks, add it here
+    } else if (!isDragging) {
+      galleryContainerRef.current.style.transition =
+        "transform 0.2s ease-in-out";
+      console.log("Click is registered");
+      if (event.target.tagName === "IMG") {
+        // The click occurred on an image
+        console.log("Image was clicked", event.target);
+        scrollImageToCenter(event.target);
+        setCurrentImageIndex(reverseImageRefs.get(event.target));
+        
+      }
     }
-
     setIsDragging(false);
-    setDragMovementDistance(0);
   };
 
   const onDragTerminate = (event: React.MouseEvent<HTMLDivElement>) => {
     if (isDragging) {
       setMouseWasDown(false);
       setIsDragging(false);
-      setDragMovementDistance(0);
-      setCurrentTranslateX(
-        (prevTranslateX) => prevTranslateX + dragMovementDistance
-      );
       console.log("Cursor left the element");
     }
   };
