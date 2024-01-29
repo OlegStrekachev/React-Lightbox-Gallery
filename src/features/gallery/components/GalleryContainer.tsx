@@ -1,6 +1,7 @@
 import styles from "./GalleryContainer.module.css";
-import { useRef, useState, useEffect, useCallback } from "react";
+import { useRef, useState, useEffect } from "react";
 import SlideRightIcon from "../assets/vector/slideRightIcon.svg";
+import { current } from "@reduxjs/toolkit";
 
 // Define the type for the imported image modules
 type ImageModule = {
@@ -20,43 +21,33 @@ const imageModules: ImageModule[] = Object.values(moduleFiles);
 export const GalleryContainer = () => {
   // Defining state variables
 
+  const [containerStartX, setContainerStartX] = useState<number>(0);
+
   const [mouseWasDown, setMouseWasDown] = useState(false);
   const [moveStartX, setMoveStartX] = useState<number>(0);
-
-  // State to defferentiate between click and drag actions
+  const [moveEndX, setMoveEndX] = useState<number>(0);
   const [isDragging, setIsDragging] = useState(false);
-
-  // State to keep track of the current translateX value of the  draggable gallery container
-  const [currentTranslateX, setCurrentTranslateX] = useState<number>(0);
-
-  // State to keep track of the index of the image that is currently passing by the viewport center
-  // Also used to change the main image according to the passing by image or the clicked image
   const [currentImageIndex, setCurrentImageIndex] = useState<number>(0);
 
-  // State to trigger the centering of the image with useEffect when the dragging action is finished
-  const [shouldCenterImage, setShouldCenterImage] = useState(false);
-
-  // Ref to search the image element from the image index
   const imageRefs = useRef(new Map<number, HTMLImageElement>()).current;
-  // Ref to reverse search the image index from the image element
+
   const reverseImageRefs = useRef(new Map<HTMLImageElement, number>()).current;
-  // Ref to the gallery container
   const galleryContainerRef = useRef<HTMLDivElement>(null);
 
   // useEffect to center the image when the drag action is finished and pointer
 
-  useEffect(() => {
-    if (shouldCenterImage && currentImageIndex !== null) {
-      const closestImage = imageRefs.get(currentImageIndex);
-      if (closestImage && galleryContainerRef.current) {
-        scrollImageToCenter(closestImage);
-      }
-      // Reset the shouldCenterImage state to false to prevent the useEffect from being triggered again
-      setShouldCenterImage(false);
-    }
-    // Disable the exhaustive-deps rule for this useEffect since we want to trigger the useEffect only when the shouldCenterImage state changes
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [shouldCenterImage]);
+  // useEffect(() => {
+  //   if (shouldCenterImage && currentImageIndex !== null) {
+  //     const closestImage = imageRefs.get(currentImageIndex);
+  //     if (closestImage && galleryContainerRef.current) {
+  //       scrollImageToCenter(closestImage);
+  //     }
+  //     // Reset the shouldCenterImage state to false to prevent the useEffect from being triggered again
+  //     setShouldCenterImage(false);
+  //   }
+  //   // Disable the exhaustive-deps rule for this useEffect since we want to trigger the useEffect only when the shouldCenterImage state changes
+  //   // eslint-disable-next-line react-hooks/exhaustive-deps
+  // }, [shouldCenterImage]);
 
   // Utility function to find the closest image to the viewport center
   const findClosestImageIndex = (): number | null => {
@@ -75,27 +66,24 @@ export const GalleryContainer = () => {
           closestIndex = index;
         }
       });
-      return closestIndex;
+      if (closestIndex !== null && closestIndex !== currentImageIndex) {
+        setCurrentImageIndex(closestIndex);
+      }
     }
     return null;
   };
 
   // Utility function that takes an image as an argument and scrolls gallery container parent to the center of the viewport
-  const scrollImageToCenter = useCallback(
-    (image: HTMLImageElement) => {
-      if (galleryContainerRef.current) {
-        const imageRect = image.getBoundingClientRect();
-        const imageCenter = imageRect.left + imageRect.width / 2;
-        const middleOfTheViewport = window.innerWidth / 2;
-        const movementDistance = middleOfTheViewport - imageCenter;
-        const newTranslateX = currentTranslateX + movementDistance;
-        galleryContainerRef.current.style.transform = `translateX(${newTranslateX}px)`;
-        // Update state (currentTranslateX) to keep track of the current translateX value of the gallery container
-        setCurrentTranslateX(newTranslateX);
-      }
-    },
-    [currentTranslateX]
-  ); // Add an empty array as the second argument to useCallback
+  const scrollImageToCenter = (image: HTMLImageElement) => {
+    if (galleryContainerRef.current) {
+      const imageRect = image.getBoundingClientRect();
+      const imageCenter = imageRect.left + imageRect.width / 2;
+      const middleOfTheViewport = window.innerWidth / 2;
+      const movementDistance = middleOfTheViewport - imageCenter;
+      const newTranslateX = containerStartX + movementDistance;
+      galleryContainerRef.current.style.transform = `translateX(${newTranslateX}px)`;
+    }
+  }; // Add an empty array as the second argument to useCallback
 
   // defining click and drag events handlers for the gallery container
   const onPointerDown = (event: React.MouseEvent<HTMLDivElement>) => {
@@ -115,38 +103,28 @@ export const GalleryContainer = () => {
         "User Interaction was initiated",
         galleryContainerCurrentTranslateX
       );
+      setContainerStartX(parseInt(galleryContainerCurrentTranslateX));
     } else {
       console.log("The element is not rendered yet or the ref is not attached");
     }
   };
 
   const onPointerMove = (event: React.MouseEvent<HTMLDivElement>) => {
-    // Check if the mouse was down before the move event to prevent calculating the movement distance when the user is not interacting with the gallery container
+    // Check if the mouse was down before the move event
     if (mouseWasDown) {
       const movementDistance = event.clientX - moveStartX;
-      // Check if any significant movement has been made to differentiate between click and drag actions
+      // Check if any significant movement has been made
       if (Math.abs(movementDistance) >= 4 && !isDragging) {
         setIsDragging(true);
         console.log("Drag action was started");
+        // Initiate tracking index of the image
+        findClosestImageIndex();
       }
-
-      // It is better to use local conditions for the drag action to be performed instead of relying on isDragging state.
-      // This way you dont need to rely on react state updates to perform the action cause it can be delayed due to the async nature of the state updates.
-
-      if (Math.abs(movementDistance) >= 4) {
-        // Initiate tracking index of the image that is currently passing closest to the viewport center
-        const passingByImageIndex = findClosestImageIndex();
-        console.log("Passing by image index is", passingByImageIndex);
-        // Update the current image index state to the index of the image that is currently passing closest to the viewport center
-        if (passingByImageIndex && passingByImageIndex !== currentImageIndex) {
-          setCurrentImageIndex(passingByImageIndex);
-        }
-        // Update the translateX value of the gallery container to move the gallery container
-        if (galleryContainerRef.current !== null) {
-          galleryContainerRef.current.style.transform = `translateX(${
-            currentTranslateX + movementDistance
-          }px)`;
-        }
+      // Update the translateX value of the gallery container to move it
+      if (galleryContainerRef.current !== null) {
+        galleryContainerRef.current.style.transform = `translateX(${
+          containerStartX + movementDistance
+        }px)`;
       }
     }
   };
@@ -154,32 +132,22 @@ export const GalleryContainer = () => {
   const onPointerUp = (event: React.MouseEvent<HTMLDivElement>) => {
     // Terminate the drag action and calulations of the movement distance when the user releases the mouse button
     setMouseWasDown(false);
-    // Calculate the aggregate movement distance
-    const movementDistance = event.clientX - moveStartX;
-    // Update the translateX value of the gallery container to move the gallery container according to the aggregate movement distance
-    const newTranslateX = currentTranslateX + movementDistance;
-    setCurrentTranslateX(newTranslateX);
+    // Retrieve the current translateX value of the gallery container from the real dom (returnx matrix)
+    setMoveEndX(event.clientX - moveStartX);
 
     // Differentiate between click and drag actions logic here
     if (isDragging && galleryContainerRef.current !== null) {
       console.log("Drag action was ended");
-      const closestImageIndex = findClosestImageIndex();
-      if (closestImageIndex !== null) {
-        // Change transition property of the gallery container to enable smooth transition of the gallery container when the user releases the mouse button
-        // and useEffect is triggered to center the image
+      findClosestImageIndex();
         galleryContainerRef.current.style.transition =
           "transform 0.2s ease-in-out";
-        console.log("Closest image index is", closestImageIndex);
+        console.log("Closest image index is", currentImageIndex);
         // When pointer is released, below setters will trigger the useEffect to center the image
-        setShouldCenterImage(true);
-      }
+        // Empty
     } else if (!isDragging && galleryContainerRef.current !== null) {
-      // Change transition property of the gallery container to enable smooth transition of the gallery container when the user releases the mouse button
       galleryContainerRef.current.style.transition =
         "transform 0.2s ease-in-out";
       console.log("Click is registered");
-      // Checking prototype of the clicked element to differentiate between click on the image and click on something else
-      // Since we have to pass the image element to the scrollImageToCenter function, we need to check if the clicked element is an image
       if (event.target instanceof HTMLImageElement) {
         // The click occurred on an image
         console.log("Image was clicked", event.target);
@@ -203,68 +171,6 @@ export const GalleryContainer = () => {
     setIsDragging(false);
   };
 
-  const onPointerLeave = (event: React.MouseEvent<HTMLDivElement>) => {
-    if (isDragging) {
-      setMouseWasDown(false);
-      setIsDragging(false);
-      // Calculate the aggregate movement distance before the pointer left the gallery container
-      const movementDistance = event.clientX - moveStartX;
-      // Updating the translateX value of the gallery container to move the gallery container according to the aggregate movement distance
-      setCurrentTranslateX(currentTranslateX + movementDistance);
-      // Center the image that is currently passing closest to the viewport center with useEffect by triggering the shouldCenterImage state change
-      if (galleryContainerRef.current !== null) {
-        galleryContainerRef.current.style.transition =
-          "transform 0.2s ease-in-out";
-        const closestImageIndex = findClosestImageIndex();
-        if (closestImageIndex !== null) {
-          setCurrentImageIndex(closestImageIndex);
-        }
-        setShouldCenterImage(true);
-      }
-      console.log("Cursor left the element");
-    }
-  };
-
-  // Define onSlideRightClick and onSlideLeftClick with useCallback
-  const onSlideRightClick = useCallback(() => {
-    console.log("Right arrow button was clicked", currentImageIndex);
-    if (currentImageIndex < imageModules.length - 1) {
-      const nextImageIndex = currentImageIndex + 1;
-      const nextImage = imageRefs.get(nextImageIndex);
-      if (nextImage !== undefined) {
-        scrollImageToCenter(nextImage);
-        setCurrentImageIndex(nextImageIndex);
-      }
-    } else return;
-  }, [currentImageIndex, imageRefs, scrollImageToCenter]);
-
-  const onSlideLeftClick = useCallback(() => {
-    if (currentImageIndex >= 1) {
-      const previousImageIndex = currentImageIndex - 1;
-      const previousImage = imageRefs.get(previousImageIndex);
-      if (previousImage !== undefined) {
-        scrollImageToCenter(previousImage);
-        setCurrentImageIndex(previousImageIndex);
-      }
-    } else return;
-  }, [currentImageIndex, imageRefs, scrollImageToCenter]);
-
-  // Add throttling or debouncing here to prevent the event handler from being triggered too many times
-  // Instead of this add global event listener to the entire component and then register arroqw key press events
-  useEffect(() => {
-    const handleKeyPress = (event: KeyboardEvent) => {
-      if (event.key === "ArrowRight") {
-        onSlideRightClick();
-      } else if (event.key === "ArrowLeft") {
-        onSlideLeftClick();
-      }
-    };
-    window.addEventListener("keydown", handleKeyPress);
-    return () => {
-      window.removeEventListener("keydown", handleKeyPress);
-    };
-  }, [onSlideRightClick, onSlideLeftClick]);
-
   return (
     <div className={styles.galleryWrapper}>
       <div className={styles.mainImage}>
@@ -275,10 +181,10 @@ export const GalleryContainer = () => {
           />
         )}
       </div>
-      <button className={styles.slideRightIcon} onClick={onSlideRightClick}>
+      <button className={styles.slideRightIcon}>
         <img src={SlideRightIcon} alt="Slide Right" />
       </button>
-      <button className={styles.slideLeftIcon} onClick={onSlideLeftClick}>
+      <button className={styles.slideLeftIcon}>
         <img src={SlideRightIcon} alt="Slide Right" />
       </button>
 
@@ -289,7 +195,6 @@ export const GalleryContainer = () => {
           onPointerDown={onPointerDown}
           onPointerMove={onPointerMove}
           onPointerUp={onPointerUp}
-          onPointerLeave={onPointerLeave}
         >
           {imageModules.map((imageModule, index: number) => (
             <img
