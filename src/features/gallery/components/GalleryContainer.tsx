@@ -21,20 +21,17 @@ export const GalleryContainer = () => {
   // Defining state variables
 
   const [containerStartX, setContainerStartX] = useState<number>(0);
-
   const [mouseWasDown, setMouseWasDown] = useState(false);
   const [moveStartX, setMoveStartX] = useState<number>(0);
-
   const [isDragging, setIsDragging] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState<number>(0);
   const [shouldCenterImage, setShouldCenterImage] = useState(false);
 
   const imageRefs = useRef(new Map<number, HTMLImageElement>()).current;
-
   const reverseImageRefs = useRef(new Map<HTMLImageElement, number>()).current;
   const galleryContainerRef = useRef<HTMLDivElement>(null);
 
-  // useEffect to center the image when the drag action is finished and pointer
+  // useEffect is designed to finalize image centering to the middle of the viewport after pointer release
 
   useEffect(() => {
     if (shouldCenterImage && currentImageIndex !== null) {
@@ -188,6 +185,33 @@ export const GalleryContainer = () => {
     }
   };
 
+  const onSlideRightClick = () => {
+    if (currentImageIndex < imageModules.length - 1) {
+      setCurrentImageIndex((prev) => {
+        const nextIndex = prev + 1;
+        const nextImage = imageRefs.get(nextIndex);
+        if (nextImage) {
+          scrollImageToCenter(nextImage);
+        }
+        return nextIndex;
+      });
+    }
+  };
+
+  const onSlideLeftClick = () => {
+    if (currentImageIndex > 0) {
+      setCurrentImageIndex((prev) => {
+        const prevIndex = prev - 1;
+        const prevImage = imageRefs.get(prevIndex);
+        if (prevImage) {
+          scrollImageToCenter(prevImage);
+        }
+        return prevIndex;
+      });
+    }
+  };
+
+
   return (
     <div className={styles.galleryWrapper}>
       <div className={styles.mainImage}>
@@ -198,10 +222,10 @@ export const GalleryContainer = () => {
           />
         )}
       </div>
-      <button className={styles.slideRightIcon}>
+      <button className={styles.slideRightIcon} onClick={onSlideRightClick}>
         <img src={SlideRightIcon} alt="Slide Right" />
       </button>
-      <button className={styles.slideLeftIcon}>
+      <button className={styles.slideLeftIcon} onClick={onSlideLeftClick}>
         <img src={SlideRightIcon} alt="Slide Right" />
       </button>
 
