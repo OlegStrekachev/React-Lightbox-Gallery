@@ -28,10 +28,53 @@ export const GalleryContainer = () => {
   const [shouldCenterImage, setShouldCenterImage] = useState(false);
 
   const imageRefs = useRef(new Map<number, HTMLImageElement>()).current;
+  const mainImageRef = useRef<HTMLImageElement>(null);
+  const mainImageContainerRef = useRef<HTMLDivElement>(null);
+
   const reverseImageRefs = useRef(new Map<HTMLImageElement, number>()).current;
   const galleryContainerRef = useRef<HTMLDivElement>(null);
+  const galleryWrapperRef = useRef<HTMLDivElement>(null);
+  const galleryContainerWrapperRef = useRef<HTMLDivElement>(null);
+
+  const setViewportHeight = (): void => {
+    // Calculate the viewport height at 1% of the viewport's actual height
+    const vh = window.innerHeight * 0.01;
+
+    // Set the value in a CSS variable
+    // setProperty(propertyName, value)
+    document.documentElement.style.setProperty("--vh", `${vh}px`);
+  };
+
+  // Debouncer for rapid fired event listeners
+
+  function debounce<T extends (...args: unknown[]) => unknown>(
+    func: T,
+    wait: number
+  ) {
+    let timeout: ReturnType<typeof setTimeout>;
+    return function (this: ThisParameterType<T>, ...args: Parameters<T>) {
+      const context = this as unknown as ThisParameterType<T>;
+      clearTimeout(timeout);
+      timeout = setTimeout(() => func.apply(context, args), wait);
+    };
+  }
+
+  // This useEffect is designed to set the viewport height on initial load and on window resize
+  // It is specifically designed to prevent the mobile browser's address bar from pushing the content up
+
+  useEffect(() => {
+    // Set the viewport height on initial load
+    setViewportHeight();
+
+    // Add event listener for window resize
+    window.addEventListener("resize", setViewportHeight);
+
+    // Clean up the event listener
+    return () => window.removeEventListener("resize", setViewportHeight);
+  }, []);
 
   // useEffect is designed to finalize image centering to the middle of the viewport after pointer release
+  // When drag action is ended (onpointerup), the image closest to the center of the viewport is centered
 
   useEffect(() => {
     if (shouldCenterImage && currentImageIndex !== null) {
@@ -132,6 +175,8 @@ export const GalleryContainer = () => {
     }
   };
 
+  const debouncedOnPointerMove = debounce(onPointerMove, 10);
+
   const onPointerUp = (event: React.MouseEvent<HTMLDivElement>) => {
     // Terminate the drag action and calulations of the movement distance when the user releases the mouse button
     setMouseWasDown(false);
@@ -173,15 +218,61 @@ export const GalleryContainer = () => {
   const onPointerLeave = () => {
     // Terminate the drag action and calulations of the movement distance when the pointer leaves the gallery container
     setMouseWasDown(false);
-    setIsDragging(false);
-    console.log("Drag action was ended");
-    if (galleryContainerRef.current !== null) {
-      galleryContainerRef.current.style.transition =
-        "transform 0.2s ease-in-out";
+    if (isDragging && galleryContainerRef.current !== null) {
+      setIsDragging(false);
+      console.log("Cursor left the container");
+      galleryContainerRef.current.style.transition = "transform 0.1s ease-out";
     }
     const imageOnPointerLeave = imageRefs.get(currentImageIndex);
     if (imageOnPointerLeave !== undefined) {
       scrollImageToCenter(imageOnPointerLeave);
+    }
+  };
+
+  const [scale, setScale] = useState(1);
+
+  const onWheelScroll = (event: React.WheelEvent<HTMLDivElement>) => {
+    event.preventDefault(); // Prevent the default scrolling behavior
+
+    setScale((prevScale) => {
+      const zoomableImage = mainImageRef.current;
+
+      if (zoomableImage) {
+        const rect = zoomableImage.getBoundingClientRect();
+        const cursorX = event.clientX - rect.left;
+        const cursorY = event.clientY - rect.top;
+
+        // Calculate the factor by which to zoom
+        const zoomFactor = event.deltaY * -0.001;
+
+        if (galleryWrapperRef.current) {
+          if (scale > 1) {
+            mainImageContainerRef.current.style.gridArea = `1 / 1 / -1 / -1`;
+            galleryContainerWrapperRef.current.style.transform =
+              "translateY(100%)";
+            galleryContainerWrapperRef.current.style.opacity = "0";
+          } else {
+            mainImageContainerRef.current.style.gridArea = `1 / 2 / 2 / 3`;
+            galleryContainerWrapperRef.current.style.transform =
+              "translateY(0)";
+            galleryContainerWrapperRef.current.style.opacity = "1";
+          }
+        }
+
+        // Calculate the new scale, limiting it between 1 and 4
+        let newScale = prevScale + zoomFactor;
+        newScale = Math.max(1, Math.min(newScale, 4));
+
+        zoomableImage.style.transform = `scale(${newScale})`;
+
+        return newScale;
+      }
+    });
+
+    if (event.deltaY > 0) {
+      console.log("Zooming out");
+    } else {
+      console.log("Zooming in");
     }
   };
 
@@ -211,12 +302,14 @@ export const GalleryContainer = () => {
     }
   };
 
-
   return (
-    <div className={styles.galleryWrapper}>
-      <div className={styles.mainImage}>
+    <div className={styles.galleryWrapper} ref={galleryWrapperRef}>
+      <div className={styles.mainImage} ref={mainImageContainerRef}>
         {imageModules[currentImageIndex] && (
           <img
+            ref={mainImageRef}
+            onWheel={onWheelScroll}
+            key={currentImageIndex}
             src={imageModules[currentImageIndex].default}
             alt={`Gallery item ${currentImageIndex}`}
           />
@@ -229,7 +322,7 @@ export const GalleryContainer = () => {
         <img src={SlideRightIcon} alt="Slide Right" />
       </button>
 
-      <div className={styles.carouselWrapper}>
+      <div className={styles.carouselWrapper} ref={galleryContainerWrapperRef}>
         <div
           ref={galleryContainerRef}
           className={styles.galleryContainer}

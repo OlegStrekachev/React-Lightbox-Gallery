@@ -1,24 +1,30 @@
 .galleryWrapper {
-  height: 100vh;
+  height: calc(var(--vh, 1vh) * 100);
   display: grid;
   grid-template-columns: 1fr 10fr 1fr;
-  grid-template-rows: 70% 30%;
+  grid-template-rows: 80% 20%;
+  background-color: rgb(32, 32, 32);
+  overflow: hidden;
 }
 
 .mainImage {
   grid-area: 1 / 2 / 2 / 3;
-
   display: flex;
   justify-content: center;
   align-items: center;
   overflow: hidden;
+  margin-top: 2rem;
 }
 
 .mainImage > img {
+  cursor: zoom-in;
   height: 100%;
-  max-width: 100%;
+  max-width: 100%; 
   object-fit: contain;
+  animation: fadeIn 300ms ease-out;
 }
+
+
 
 .carouselWrapper {
   grid-area: 2 / 1 / 3 / -1;
@@ -26,6 +32,7 @@
   display: flex;
   justify-content: center;
   overflow: hidden;
+  transition: all 0.2s ease-in-out;
 }
 
 .galleryContainer {
@@ -36,8 +43,7 @@
   overflow: visible;
   transition: all 0.2s ease-in-out;
   transform: translateX(0px);
-  gap: 1rem;
-  
+  gap: 2rem;
 }
 
 
@@ -48,6 +54,7 @@
   object-fit: cover;
   cursor: pointer;
   user-select: none;
+  border-radius: 0.5rem;
 }
 
 .slideRightIcon {
@@ -85,7 +92,14 @@
 
 .slideRightIcon > img,
 .slideLeftIcon > img {
-  height: 100%;
+  height: 4rem;
   aspect-ratio: 1/1;
   object-fit: cover;
+  z-index: 1;
 }
+
+@keyframes fadeIn {
+  from { opacity: 0.3; }
+  to { opacity: 1; }
+}
+
