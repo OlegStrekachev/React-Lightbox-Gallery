@@ -2,7 +2,10 @@ import styles from "./GalleryContainer.module.css";
 import { useRef, useState, useEffect } from "react";
 import SlideRightIcon from "../assets/vector/slideRightIcon.svg";
 
-// Define the type for the imported image modules
+// Custom hooks imports
+import { useWindowResizeListener } from "../hooks/useWindowResizeListener";
+
+// Explicitly stating the expected structure of the imported modules
 type ImageModule = {
   default: string;
 };
@@ -12,12 +15,26 @@ const moduleFiles = import.meta.glob("../assets/*.jpg", {
   eager: true,
 }) as Record<string, ImageModule>;
 
-// Transform the imported modules into an array of (ts) images
-// using Object.values(moduleFiles), you're extracting just the modules
-// (the values of the moduleFiles object) and putting them into an array.
+/* it returns an object with the strucure {
+  "key0": {"key1": "value1"},
+  "key1": {"key2": "value2"}
+}
+*/
+console.log(moduleFiles);
+
 const imageModules: ImageModule[] = Object.values(moduleFiles);
 
+/* Convert the object to an array of values
+[{"key1": "value1"}, {"key2": "value2"}]
+*/
+
+console.log(imageModules);
+
 export const GalleryContainer = () => {
+  // Screen orienbtation tracking
+
+  const [orientation, setOrientation] = useState<string>("");
+
   // Defining state variables
 
   const [containerStartX, setContainerStartX] = useState<number>(0);
@@ -27,51 +44,58 @@ export const GalleryContainer = () => {
   const [currentImageIndex, setCurrentImageIndex] = useState<number>(0);
   const [shouldCenterImage, setShouldCenterImage] = useState(false);
 
+  // Defining refs
   const imageRefs = useRef(new Map<number, HTMLImageElement>()).current;
   const mainImageRef = useRef<HTMLImageElement>(null);
   const mainImageContainerRef = useRef<HTMLDivElement>(null);
-
   const reverseImageRefs = useRef(new Map<HTMLImageElement, number>()).current;
   const galleryContainerRef = useRef<HTMLDivElement>(null);
   const galleryWrapperRef = useRef<HTMLDivElement>(null);
   const galleryContainerWrapperRef = useRef<HTMLDivElement>(null);
 
-  const setViewportHeight = (): void => {
-    // Calculate the viewport height at 1% of the viewport's actual height
-    const vh = window.innerHeight * 0.01;
+  const lastOrientation = useRef(orientation);
+  console.log(lastOrientation, "lastorientation");
+  useEffect(() => {
+    const imageRef = imageRefs.get(currentImageIndex);
+    if (lastOrientation.current !== orientation) {
+      if (imageRef) {
+        // Introduce a slight delay to allow for layout updates
 
-    // Set the value in a CSS variable
-    // setProperty(propertyName, value)
-    document.documentElement.style.setProperty("--vh", `${vh}px`);
-  };
-
-  // Debouncer for rapid fired event listeners
-
-  function debounce<T extends (...args: unknown[]) => unknown>(
-    func: T,
-    wait: number
-  ) {
-    let timeout: ReturnType<typeof setTimeout>;
-    return function (this: ThisParameterType<T>, ...args: Parameters<T>) {
-      const context = this as unknown as ThisParameterType<T>;
-      clearTimeout(timeout);
-      timeout = setTimeout(() => func.apply(context, args), wait);
-    };
-  }
-
-  // This useEffect is designed to set the viewport height on initial load and on window resize
-  // It is specifically designed to prevent the mobile browser's address bar from pushing the content up
+        scrollImageToCenter(imageRef);
+      }
+    }
+  }, [orientation, currentImageIndex]);
 
   useEffect(() => {
-    // Set the viewport height on initial load
-    setViewportHeight();
+    const handleOrientationChange = () => {
+      const isLandScape = window.innerWidth > window.innerHeight;
+      if (isLandScape) {
+        setOrientation("landscape");
+        document.body.setAttribute("data-orientation", "landscape");
+      } else {
+        setOrientation("portrait");
+        document.body.setAttribute("data-orientation", "portrait");
+      }
+    };
 
-    // Add event listener for window resize
-    window.addEventListener("resize", setViewportHeight);
+    // Call the handler immediately to set the initial orientation on component load
+    handleOrientationChange();
 
-    // Clean up the event listener
-    return () => window.removeEventListener("resize", setViewportHeight);
+    // Execute handleOrientationChange at the next repaint after orientation change
+    const delayExecution = () => {
+      requestAnimationFrame(() => {
+        handleOrientationChange();
+      });
+    };
+
+    window.addEventListener("resize", delayExecution);
+    return () => {
+      window.removeEventListener("resize", delayExecution);
+    };
   }, []);
+
+  // Custom hook to listen for window resize events and update the viewport height custom property
+  useWindowResizeListener();
 
   // useEffect is designed to finalize image centering to the middle of the viewport after pointer release
   // When drag action is ended (onpointerup), the image closest to the center of the viewport is centered
@@ -113,6 +137,8 @@ export const GalleryContainer = () => {
     }
     return null;
   };
+
+  // Event listener for orientation change. It centers the image closest to the center of the viewport
 
   // Utility function that takes an image as an argument and scrolls gallery container parent to the center of the viewport
   const scrollImageToCenter = (image: HTMLImageElement) => {
@@ -175,8 +201,6 @@ export const GalleryContainer = () => {
     }
   };
 
-  const debouncedOnPointerMove = debounce(onPointerMove, 10);
-
   const onPointerUp = (event: React.MouseEvent<HTMLDivElement>) => {
     // Terminate the drag action and calulations of the movement distance when the user releases the mouse button
     setMouseWasDown(false);
@@ -238,14 +262,14 @@ export const GalleryContainer = () => {
       const zoomableImage = mainImageRef.current;
 
       if (zoomableImage) {
-        const rect = zoomableImage.getBoundingClientRect();
-        const cursorX = event.clientX - rect.left;
-        const cursorY = event.clientY - rect.top;
-
         // Calculate the factor by which to zoom
         const zoomFactor = event.deltaY * -0.001;
 
-        if (galleryWrapperRef.current) {
+        if (
+          galleryWrapperRef.current &&
+          galleryContainerWrapperRef.current &&
+          mainImageContainerRef.current
+        ) {
           if (scale > 1) {
             mainImageContainerRef.current.style.gridArea = `1 / 1 / -1 / -1`;
             galleryContainerWrapperRef.current.style.transform =
@@ -343,6 +367,10 @@ export const GalleryContainer = () => {
               src={imageModule.default}
               alt="Gallery item"
               draggable="false"
+              className={`${
+                index === currentImageIndex ? styles.centeredImage : ""
+              }
+              ${orientation === "portrait" ? styles.portraitImage : ""}`}
             />
           ))}
         </div>

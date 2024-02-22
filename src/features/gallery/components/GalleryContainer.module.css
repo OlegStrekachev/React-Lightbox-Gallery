@@ -1,3 +1,8 @@
+* {
+  touch-action: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
 .galleryWrapper {
   height: calc(var(--vh, 1vh) * 100);
   display: grid;
@@ -8,7 +13,7 @@
 }
 
 .mainImage {
-  grid-area: 1 / 2 / 2 / 3;
+  grid-area: 1 / 1 / 2 / -1;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -19,12 +24,10 @@
 .mainImage > img {
   cursor: zoom-in;
   height: 100%;
-  max-width: 100%; 
+  max-width: 100%;
   object-fit: contain;
   animation: fadeIn 300ms ease-out;
 }
-
-
 
 .carouselWrapper {
   grid-area: 2 / 1 / 3 / -1;
@@ -43,18 +46,25 @@
   overflow: visible;
   transition: all 0.2s ease-in-out;
   transform: translateX(0px);
-  gap: 2rem;
+  gap: 1rem;
 }
 
-
-
 .galleryContainer > img {
-  max-height: 30vh;
+  max-height: 15vh;
   aspect-ratio: 1/1;
   object-fit: cover;
   cursor: pointer;
   user-select: none;
   border-radius: 0.5rem;
+  opacity: 0.5;
+}
+
+.galleryContainer > img.centeredImage {
+  opacity: 1;
+}
+
+.galleryContainer > img.portraitImage {
+  max-height: 10vh;
 }
 
 .slideRightIcon {
@@ -99,7 +109,24 @@
 }
 
 @keyframes fadeIn {
-  from { opacity: 0.3; }
-  to { opacity: 1; }
+  from {
+    opacity: 0.3;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
+body[data-orientation="landscape"] .slideRightIcon,
+body[data-orientation="landscape"] .slideLeftIcon {
+  align-self: center;
+}
+
+body[data-orientation="landscape"] .galleryContainer {
+  gap: 0.7rem;
+}
+
+body[data-orientation="portrait"] .slideRightIcon,
+body[data-orientation="portrait"] .slideLeftIcon {
+  align-self: flex-end;
+}
