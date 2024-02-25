@@ -27,7 +27,6 @@ const imageModules: ImageModule[] = Object.values(moduleFiles);
 [{"key1": "value1"}, {"key2": "value2"}]
 */
 
-console.log(screen.orientation.type);
 export const GalleryContainer = () => {
   // Screen orienbtation tracking
 
@@ -75,39 +74,6 @@ export const GalleryContainer = () => {
 
   // Event handler for orientation change
 
-  const handleOrientationChange = () => {
-    const newOrientation = screen.orientation.type;
-    const imageRef = imageRefs.get(currentImageIndex);
-
-    console.log(newOrientation);
-
-    if (newOrientation !== orientation && imageRefs) {
-      setOrientation(newOrientation);
-      document.body.setAttribute(
-        "data-orientation",
-        newOrientation.split("-")[0]
-      );
-
-      if (imageRef) {
-        console.log(
-          currentImageIndex,
-          " is the current image index and the image ref is",
-          imageRef
-        );
-
-        scrollImageToCenter(imageRef);
-        console.log("Image was centered after orientation change");
-      }
-
-      // If the orientation has changed, set the centerAfterOrientationChange state to true
-      // to avoid triggering useeffect on currentImageIndex change
-
-      // setCenterAfterOrientationChange(true);
-      console.log("Orientation has changed");
-    }
-  };
-  // Effect responsible for updating the orientation state when the orientation changes
-
   useEffect(() => {
     // Call the handler immediately to set the initial orientation on component load
     const initialOrientation = screen.orientation.type;
@@ -123,6 +89,56 @@ export const GalleryContainer = () => {
     };
   }, []);
 
+  const handleOrientationChange = () => {
+    const newOrientation = screen.orientation.type;
+
+    console.log(newOrientation);
+
+    if (newOrientation !== orientation) {
+      const image = imageRefs.get(currentImageIndex);
+      setOrientation(newOrientation);
+      document.body.setAttribute(
+        "data-orientation",
+        newOrientation.split("-")[0]
+      );
+
+      console.log("Orientation change handler block is executing");
+      if (image && galleryContainerRef.current) {
+        const imageRect = image.getBoundingClientRect();
+        console.log(
+          "Image rect from the handleOrientationChange function",
+          imageRect
+        );
+        console.log(
+          window.innerWidth,
+          window.innerHeight,
+          "Window dimensions from event handler"
+        );
+
+        console.log(
+          window
+            .getComputedStyle(galleryContainerRef.current)
+            .transform.split(",")[4],
+          "computedStyle TranslateX from the event handler BEFORE transformation"
+        );
+
+        setTimeout(() => {
+          scrollImageToCenter(image);
+        }, 100);
+
+        console.log(
+          window
+            .getComputedStyle(galleryContainerRef.current)
+            .transform.split(",")[4],
+          "computedStyle TranslateX from the event handler after transformation"
+        );
+      }
+
+      // setCenterAfterOrientationChange(true);
+    }
+  };
+  // Effect responsible for updating the orientation state when the orientation changes
+
   // Custom hook to listen for window resize events and update the viewport height custom property
   useWindowResizeListener();
 
@@ -131,6 +147,9 @@ export const GalleryContainer = () => {
 
   useEffect(() => {
     if (shouldCenterImage && currentImageIndex !== null) {
+      console.log(
+        "Final centering adjustement block from the useEffect was executed"
+      );
       const closestImage = imageRefs.get(currentImageIndex);
       if (closestImage && galleryContainerRef.current) {
         scrollImageToCenter(closestImage);
@@ -173,9 +192,25 @@ export const GalleryContainer = () => {
   const scrollImageToCenter = (image: HTMLImageElement) => {
     if (galleryContainerRef.current) {
       const imageRect = image.getBoundingClientRect();
-      console.log(imageRect);
+      console.log(
+        "Image rect from the ScrollImageToCenter function",
+        imageRect
+      );
+      console.log(
+        window.innerWidth,
+        window.innerHeight,
+        "Window dimensions from the ScrollImageToCenter function"
+      );
+      console.log(
+        window
+          .getComputedStyle(galleryContainerRef.current)
+          .transform.split(",")[4],
+        "computedStyle TranslateX from the ScrollImageToCenter function BEFORE transformation"
+      );
+
       const imageCenter = imageRect.left + imageRect.width / 2;
       const middleOfTheViewport = window.innerWidth / 2;
+
       const movementDistance = middleOfTheViewport - imageCenter;
       // Retrieving the current translateX value of the gallery container from the real dom (returnx matrix)
       const galleryContainerCurrentTranslateX = window
@@ -185,9 +220,25 @@ export const GalleryContainer = () => {
       const newTranslateX =
         Number(galleryContainerCurrentTranslateX) + movementDistance;
       galleryContainerRef.current.style.transform = `translateX(${newTranslateX}px)`;
+
+      console.log(
+        window
+          .getComputedStyle(galleryContainerRef.current)
+          .transform.split(",")[4],
+        "computedStyle TranslateX from the ScrollImageToCenter function after transformation"
+      );
     }
   }; // Add an empty array as the second argument to useCallback
 
+  /*
+
+
+
+
+
+
+
+  */
   // defining click and drag events handlers for the gallery container
   const onPointerDown = (event: React.MouseEvent<HTMLDivElement>) => {
     if (galleryContainerRef.current) {
@@ -202,10 +253,10 @@ export const GalleryContainer = () => {
       const galleryContainerCurrentTranslateX = window
         .getComputedStyle(galleryContainerRef.current)
         .transform.split(",")[4];
-      console.log(
-        "User Interaction was initiated",
-        galleryContainerCurrentTranslateX
-      );
+      // console.log(
+      //   "User Interaction was initiated",
+      //   galleryContainerCurrentTranslateX
+      // );
       setContainerStartX(parseInt(galleryContainerCurrentTranslateX));
     } else {
       console.log("The element is not rendered yet or the ref is not attached");
