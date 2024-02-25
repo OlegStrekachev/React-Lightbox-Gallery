@@ -20,7 +20,6 @@ const moduleFiles = import.meta.glob("../assets/*.jpg", {
   "key1": {"key2": "value2"}
 }
 */
-console.log(moduleFiles);
 
 const imageModules: ImageModule[] = Object.values(moduleFiles);
 
@@ -28,12 +27,13 @@ const imageModules: ImageModule[] = Object.values(moduleFiles);
 [{"key1": "value1"}, {"key2": "value2"}]
 */
 
-console.log(imageModules);
-
+console.log(screen.orientation.type);
 export const GalleryContainer = () => {
   // Screen orienbtation tracking
 
   const [orientation, setOrientation] = useState<string>("");
+  const [centerAfterOrientationChange, setCenterAfterOrientationChange] =
+    useState<boolean>(false);
 
   // Defining state variables
 
@@ -53,44 +53,73 @@ export const GalleryContainer = () => {
   const galleryWrapperRef = useRef<HTMLDivElement>(null);
   const galleryContainerWrapperRef = useRef<HTMLDivElement>(null);
 
-  const lastOrientation = useRef(orientation);
-  console.log(lastOrientation, "lastorientation");
-  useEffect(() => {
+  // Effect responsible for centering current image in the preview after orientation change
+
+  // useEffect(() => {
+  //   const imageRef = imageRefs.get(currentImageIndex);
+  //   if (centerAfterOrientationChange && imageRef) {
+  //     // Introduce a slight delay to allow for layout updates
+  //     console.log("Centering on orientation change");
+
+  //     // Wrapping the scrollImageToCenter function in requestAnimationFrame since first function deponds on reading dom rect properties
+  //     // and they migh not be available immediately after the orientation change since reflow and repaint might not have been completed.
+
+  //     requestAnimationFrame(() => {
+  //       requestAnimationFrame(() => {
+  //         scrollImageToCenter(imageRef);
+  //         setCenterAfterOrientationChange(false);
+  //       });
+  //     });
+  //   }
+  // }, [orientation, currentImageIndex, centerAfterOrientationChange]);
+
+  // Event handler for orientation change
+
+  const handleOrientationChange = () => {
+    const newOrientation = screen.orientation.type;
     const imageRef = imageRefs.get(currentImageIndex);
-    if (lastOrientation.current !== orientation) {
+
+    console.log(newOrientation);
+
+    if (newOrientation !== orientation && imageRefs) {
+      setOrientation(newOrientation);
+      document.body.setAttribute(
+        "data-orientation",
+        newOrientation.split("-")[0]
+      );
+
       if (imageRef) {
-        // Introduce a slight delay to allow for layout updates
+        console.log(
+          currentImageIndex,
+          " is the current image index and the image ref is",
+          imageRef
+        );
 
         scrollImageToCenter(imageRef);
+        console.log("Image was centered after orientation change");
       }
+
+      // If the orientation has changed, set the centerAfterOrientationChange state to true
+      // to avoid triggering useeffect on currentImageIndex change
+
+      // setCenterAfterOrientationChange(true);
+      console.log("Orientation has changed");
     }
-  }, [orientation, currentImageIndex]);
+  };
+  // Effect responsible for updating the orientation state when the orientation changes
 
   useEffect(() => {
-    const handleOrientationChange = () => {
-      const isLandScape = window.innerWidth > window.innerHeight;
-      if (isLandScape) {
-        setOrientation("landscape");
-        document.body.setAttribute("data-orientation", "landscape");
-      } else {
-        setOrientation("portrait");
-        document.body.setAttribute("data-orientation", "portrait");
-      }
-    };
-
     // Call the handler immediately to set the initial orientation on component load
-    handleOrientationChange();
+    const initialOrientation = screen.orientation.type;
+    setOrientation(initialOrientation);
+    document.body.setAttribute(
+      "data-orientation",
+      screen.orientation.type.split("-")[0]
+    );
 
-    // Execute handleOrientationChange at the next repaint after orientation change
-    const delayExecution = () => {
-      requestAnimationFrame(() => {
-        handleOrientationChange();
-      });
-    };
-
-    window.addEventListener("resize", delayExecution);
+    screen.orientation.addEventListener("change", handleOrientationChange);
     return () => {
-      window.removeEventListener("resize", delayExecution);
+      screen.orientation.removeEventListener("change", handleOrientationChange);
     };
   }, []);
 
@@ -144,6 +173,7 @@ export const GalleryContainer = () => {
   const scrollImageToCenter = (image: HTMLImageElement) => {
     if (galleryContainerRef.current) {
       const imageRect = image.getBoundingClientRect();
+      console.log(imageRect);
       const imageCenter = imageRect.left + imageRect.width / 2;
       const middleOfTheViewport = window.innerWidth / 2;
       const movementDistance = middleOfTheViewport - imageCenter;
@@ -253,7 +283,7 @@ export const GalleryContainer = () => {
     }
   };
 
-  const [scale, setScale] = useState(1);
+  const [scale, setScale] = useState<number>(1);
 
   const onWheelScroll = (event: React.WheelEvent<HTMLDivElement>) => {
     event.preventDefault(); // Prevent the default scrolling behavior
