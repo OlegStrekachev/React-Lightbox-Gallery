@@ -31,9 +31,7 @@ export const GalleryContainer = () => {
   // Screen orienbtation tracking
 
   const [orientation, setOrientation] = useState<string>("");
-  const [centerAfterOrientationChange, setCenterAfterOrientationChange] =
-    useState<boolean>(false);
-
+  const [orientationHasChanged, setOrientationHasChanged] = useState(false);
   // Defining state variables
 
   const [containerStartX, setContainerStartX] = useState<number>(0);
@@ -70,6 +68,21 @@ export const GalleryContainer = () => {
     };
   }, []);
 
+  useEffect(() => {
+    if (orientationHasChanged) {
+      console.log("Orientation has changed");
+      const image = imageRefs.get(currentImageIndex);
+      if (image) {
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            scrollImageToCenter(image);
+          });
+        });
+      }
+      setOrientationHasChanged(false);
+    }
+  }, [orientationHasChanged, currentImageIndex, imageRefs]);
+
   const handleOrientationChange = () => {
     const newOrientation = screen.orientation.type;
 
@@ -83,37 +96,7 @@ export const GalleryContainer = () => {
         newOrientation.split("-")[0]
       );
 
-      console.log("Orientation change handler block is executing");
-      if (image && galleryContainerRef.current) {
-        const imageRect = image.getBoundingClientRect();
-        console.log(
-          "Image rect from the handleOrientationChange function",
-          imageRect
-        );
-        console.log(
-          window.innerWidth,
-          window.innerHeight,
-          "Window dimensions from event handler"
-        );
-
-        console.log(
-          window
-            .getComputedStyle(galleryContainerRef.current)
-            .transform.split(",")[4],
-          "computedStyle TranslateX from the event handler BEFORE transformation"
-        );
-
-        scrollImageToCenter(image);
-
-        console.log(
-          window
-            .getComputedStyle(galleryContainerRef.current)
-            .transform.split(",")[4],
-          "computedStyle TranslateX from the event handler after transformation"
-        );
-      }
-
-      // setCenterAfterOrientationChange(true);
+      setOrientationHasChanged(true);
     }
   };
   // Effect responsible for updating the orientation state when the orientation changes
@@ -167,10 +150,8 @@ export const GalleryContainer = () => {
   // Utility function that takes an image as an argument and scrolls gallery container parent to the center of the viewport
   const scrollImageToCenter = (image: HTMLImageElement) => {
     console.log("scrollImageToCenter function was called");
-    console.trace("Call stack for scrollImageToCenter");
     if (galleryContainerRef.current) {
       const imageRect = image.getBoundingClientRect();
-
       const imageCenter = imageRect.left + imageRect.width / 2;
       const middleOfTheViewport = window.innerWidth / 2;
 
@@ -183,11 +164,14 @@ export const GalleryContainer = () => {
       const curernTranslateX = cssMatrix.m41;
 
       const newTranslateX = Number(curernTranslateX) + movementDistance;
+      console.log("New translateX value is", newTranslateX);
       galleryContainerRef.current.style.transform = `translateX(${newTranslateX}px)`;
     }
   }; // Add an empty array as the second argument to useCallback
 
   /*
+      const imageCenter = imageRect.left + imageRect.width / 2;
+     
 
 
   */
@@ -338,12 +322,12 @@ export const GalleryContainer = () => {
     }
   };
 
-  const onSlideRightClick = (event) => {
-    console.log("Slide right button was clicked");
-    event.stopPropagation();
-    if (currentImageIndex < imageModules.length - 1) {
-      setCurrentImageIndex((prev) => {
-        const nextIndex = prev + 1;
+  const onSlideRightClick = useCallback(
+    (event: React.MouseEvent<HTMLButtonElement>) => {
+      console.log("Slide right button was clicked");
+      event.stopPropagation();
+      if (currentImageIndex < imageModules.length - 1) {
+        const nextIndex = currentImageIndex + 1;
         const nextImage = imageRefs.get(nextIndex);
         console.log("Next image  is", nextImage);
 
@@ -351,11 +335,11 @@ export const GalleryContainer = () => {
           console.log("Next image  is", nextImage);
           scrollImageToCenter(nextImage);
         }
-
-        return nextIndex;
-      });
-    }
-  };
+        setCurrentImageIndex(nextIndex);
+      }
+    },
+    [scrollImageToCenter, currentImageIndex, imageRefs]
+  );
 
   const onSlideLeftClick = useCallback(
     (event: React.MouseEvent<HTMLButtonElement>) => {
