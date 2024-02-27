@@ -70,6 +70,16 @@ export const GalleryContainer = () => {
 
   useEffect(() => {
     if (orientationHasChanged) {
+      if (galleryContainerRef.current) {
+        const cssMatrix = new DOMMatrixReadOnly(
+          galleryContainerRef.current.style.transform
+        );
+        const curernTranslateX = cssMatrix.m41;
+        console.log("Current translateX value is", curernTranslateX);
+      } else {
+        console.log("Gallery container is not rendered yet");
+      }
+
       console.log("Orientation has changed");
       const image = imageRefs.get(currentImageIndex);
       if (image) {
@@ -96,7 +106,26 @@ export const GalleryContainer = () => {
         newOrientation.split("-")[0]
       );
 
-      setOrientationHasChanged(true);
+      let lastWidth = 0;
+      const checkLayoutStability = () => {
+        requestAnimationFrame(() => {
+          const currentWidth = window.innerWidth;
+          if (currentWidth !== lastWidth) {
+            console.log("Width is still changing", currentWidth);
+            lastWidth = currentWidth;
+            checkLayoutStability(); // Repeat if the width is still changing
+          } else {
+            // Width has stabilized, proceed
+            console.log(window.innerWidth);
+            setOrientationHasChanged(true);
+          }
+        });
+      };
+
+      // Trigger this function in your orientation change handler
+      checkLayoutStability();
+
+      // setOrientationHasChanged(true);
     }
   };
   // Effect responsible for updating the orientation state when the orientation changes
@@ -153,9 +182,12 @@ export const GalleryContainer = () => {
     if (galleryContainerRef.current) {
       const imageRect = image.getBoundingClientRect();
       const imageCenter = imageRect.left + imageRect.width / 2;
+      console.log("Image width is", imageRect.width);
       const middleOfTheViewport = window.innerWidth / 2;
+      console.log("Viewport width is", window.innerWidth);
 
       const movementDistance = middleOfTheViewport - imageCenter;
+      console.log("Movement distance is", movementDistance);
       // Retrieving the current translateX value of the gallery container from the real dom (returnx matrix)
 
       const cssMatrix = new DOMMatrixReadOnly(
