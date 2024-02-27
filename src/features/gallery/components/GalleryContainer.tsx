@@ -50,23 +50,21 @@ export const GalleryContainer = () => {
   const galleryWrapperRef = useRef<HTMLDivElement>(null);
   const galleryContainerWrapperRef = useRef<HTMLDivElement>(null);
 
+  const handleOrientationChange = () => {
+    const newOrientation =
+      window.innerHeight > window.innerWidth ? "portrait" : "landscape";
+    if (newOrientation !== orientation) {
+      console.log("Orientation has changed");
+      document.body.setAttribute("data-orientation", newOrientation);
+      setOrientation(newOrientation);
+      setOrientationHasChanged(true); // This flag could be reset somewhere else in your component as needed
+    } else {
+      setOrientationHasChanged(false);
+    }
+  };
+
   // Custom hook to listen for window resize events and update the viewport height custom property
-  useWindowResizeListener();
-
-  useEffect(() => {
-    // Call the handler immediately to set the initial orientation on component load
-    const initialOrientation = screen.orientation.type;
-    setOrientation(initialOrientation);
-    document.body.setAttribute(
-      "data-orientation",
-      screen.orientation.type.split("-")[0]
-    );
-
-    screen.orientation.addEventListener("change", handleOrientationChange);
-    return () => {
-      screen.orientation.removeEventListener("change", handleOrientationChange);
-    };
-  }, []);
+  useWindowResizeListener(handleOrientationChange);
 
   useEffect(() => {
     if (orientationHasChanged) {
@@ -83,51 +81,58 @@ export const GalleryContainer = () => {
       console.log("Orientation has changed");
       const image = imageRefs.get(currentImageIndex);
       if (image) {
-        requestAnimationFrame(() => {
-          requestAnimationFrame(() => {
-            scrollImageToCenter(image);
-          });
-        });
+        scrollImageToCenter(image);
       }
       setOrientationHasChanged(false);
     }
   }, [orientationHasChanged, currentImageIndex, imageRefs]);
 
-  const handleOrientationChange = () => {
-    const newOrientation = screen.orientation.type;
+  // const handleOrientationChange = () => {
+  //   // const oldOrientation = orientation;
 
-    console.log(newOrientation);
+  //   setTimeout(() => {
+  //     window.innerWidth > window.innerHeight
+  //       ? console.trace()
+  //       : console.log("Portrait");
+  //   }, 1000);
 
-    if (newOrientation !== orientation) {
-      const image = imageRefs.get(currentImageIndex);
-      setOrientation(newOrientation);
-      document.body.setAttribute(
-        "data-orientation",
-        newOrientation.split("-")[0]
-      );
+  // if (newOrientation !== orientation) {
+  //   setOrientation(newOrientation);
+  //   document.body.setAttribute(
+  //     "data-orientation",
+  //     newOrientation.split("-")[0]
+  //   );
+  //   const image = imageRefs.get(currentImageIndex);
+  //   const imageRect = image?.getBoundingClientRect();
+  //   let imageCenter
+  //   let lastWidth = 0;
+  //   const checkLayoutStability = () => {
+  //     requestAnimationFrame(() => {
+  //       const currentWidth = window.innerWidth;
+  //         galleryContainerRef.current?.getBoundingClientRect();
+  //       if (currentWidth !== lastWidth) {
+  //         console.log("Width is still changing", currentWidth);
+  //         lastWidth = currentWidth;
+  //         checkLayoutStability(); // Repeat if the width is still changing
+  //       } else {
+  //         // Width has stabilized, proceed
+  //         console.log("Width has stabilized, proceed", window.innerWidth);
 
-      let lastWidth = 0;
-      const checkLayoutStability = () => {
-        requestAnimationFrame(() => {
-          const currentWidth = window.innerWidth;
-          if (currentWidth !== lastWidth) {
-            console.log("Width is still changing", currentWidth);
-            lastWidth = currentWidth;
-            checkLayoutStability(); // Repeat if the width is still changing
-          } else {
-            // Width has stabilized, proceed
-            console.log(window.innerWidth);
-            setOrientationHasChanged(true);
-          }
-        });
-      };
+  //         if (image) {
+  //           scrollImageToCenter(image);
+  //         } else {
+  //           console.log("Image is not rendered yet");
+  //         }
+  //       }
+  //     });
+  //   };
 
-      // Trigger this function in your orientation change handler
-      checkLayoutStability();
+  //   // Trigger this function in your orientation change handler
+  //   checkLayoutStability();
 
-      // setOrientationHasChanged(true);
-    }
-  };
+  //   // setOrientationHasChanged(true);
+  // }
+  // };
   // Effect responsible for updating the orientation state when the orientation changes
 
   // useEffect is designed to finalize image centering to the middle of the viewport after pointer release
@@ -179,21 +184,24 @@ export const GalleryContainer = () => {
   // Utility function that takes an image as an argument and scrolls gallery container parent to the center of the viewport
   const scrollImageToCenter = (image: HTMLImageElement) => {
     console.log("scrollImageToCenter function was called");
-    if (galleryContainerRef.current) {
+    if (galleryContainerRef.current && image) {
       const imageRect = image.getBoundingClientRect();
       const imageCenter = imageRect.left + imageRect.width / 2;
-      console.log("Image width is", imageRect.width);
+      console.log("Image center is from function", imageCenter);
+      console.log("Image width is from function", imageRect.width);
       const middleOfTheViewport = window.innerWidth / 2;
-      console.log("Viewport width is", window.innerWidth);
+      console.log("Viewport width is from function", window.innerWidth);
 
-      const movementDistance = middleOfTheViewport - imageCenter;
-      console.log("Movement distance is", movementDistance);
       // Retrieving the current translateX value of the gallery container from the real dom (returnx matrix)
 
       const cssMatrix = new DOMMatrixReadOnly(
         galleryContainerRef.current.style.transform
       );
       const curernTranslateX = cssMatrix.m41;
+      console.log("Current translateX value is", curernTranslateX);
+
+      const movementDistance = middleOfTheViewport - imageCenter;
+      console.log("Movement distance is", movementDistance);
 
       const newTranslateX = Number(curernTranslateX) + movementDistance;
       console.log("New translateX value is", newTranslateX);
@@ -358,6 +366,7 @@ export const GalleryContainer = () => {
     (event: React.MouseEvent<HTMLButtonElement>) => {
       console.log("Slide right button was clicked");
       event.stopPropagation();
+      navigator.vibrate(50);
       if (currentImageIndex < imageModules.length - 1) {
         const nextIndex = currentImageIndex + 1;
         const nextImage = imageRefs.get(nextIndex);
@@ -377,6 +386,7 @@ export const GalleryContainer = () => {
     (event: React.MouseEvent<HTMLButtonElement>) => {
       console.log("Slide left button was clicked");
       event.stopPropagation();
+      navigator.vibrate(50);
       if (currentImageIndex > 0) {
         const prevIndex = currentImageIndex - 1;
         const prevImage = imageRefs.get(prevIndex);
