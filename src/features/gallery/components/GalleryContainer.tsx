@@ -1,5 +1,5 @@
 import styles from "./GalleryContainer.module.css";
-import { useRef, useState, useEffect } from "react";
+import { useRef, useState, useEffect, useCallback } from "react";
 import SlideRightIcon from "../assets/vector/slideRightIcon.svg";
 
 // Custom hooks imports
@@ -52,27 +52,8 @@ export const GalleryContainer = () => {
   const galleryWrapperRef = useRef<HTMLDivElement>(null);
   const galleryContainerWrapperRef = useRef<HTMLDivElement>(null);
 
-  // Effect responsible for centering current image in the preview after orientation change
-
-  // useEffect(() => {
-  //   const imageRef = imageRefs.get(currentImageIndex);
-  //   if (centerAfterOrientationChange && imageRef) {
-  //     // Introduce a slight delay to allow for layout updates
-  //     console.log("Centering on orientation change");
-
-  //     // Wrapping the scrollImageToCenter function in requestAnimationFrame since first function deponds on reading dom rect properties
-  //     // and they migh not be available immediately after the orientation change since reflow and repaint might not have been completed.
-
-  //     requestAnimationFrame(() => {
-  //       requestAnimationFrame(() => {
-  //         scrollImageToCenter(imageRef);
-  //         setCenterAfterOrientationChange(false);
-  //       });
-  //     });
-  //   }
-  // }, [orientation, currentImageIndex, centerAfterOrientationChange]);
-
-  // Event handler for orientation change
+  // Custom hook to listen for window resize events and update the viewport height custom property
+  useWindowResizeListener();
 
   useEffect(() => {
     // Call the handler immediately to set the initial orientation on component load
@@ -122,9 +103,7 @@ export const GalleryContainer = () => {
           "computedStyle TranslateX from the event handler BEFORE transformation"
         );
 
-        setTimeout(() => {
-          scrollImageToCenter(image);
-        }, 100);
+        scrollImageToCenter(image);
 
         console.log(
           window
@@ -138,9 +117,6 @@ export const GalleryContainer = () => {
     }
   };
   // Effect responsible for updating the orientation state when the orientation changes
-
-  // Custom hook to listen for window resize events and update the viewport height custom property
-  useWindowResizeListener();
 
   // useEffect is designed to finalize image centering to the middle of the viewport after pointer release
   // When drag action is ended (onpointerup), the image closest to the center of the viewport is centered
@@ -190,57 +166,36 @@ export const GalleryContainer = () => {
 
   // Utility function that takes an image as an argument and scrolls gallery container parent to the center of the viewport
   const scrollImageToCenter = (image: HTMLImageElement) => {
+    console.log("scrollImageToCenter function was called");
+    console.trace("Call stack for scrollImageToCenter");
     if (galleryContainerRef.current) {
       const imageRect = image.getBoundingClientRect();
-      console.log(
-        "Image rect from the ScrollImageToCenter function",
-        imageRect
-      );
-      console.log(
-        window.innerWidth,
-        window.innerHeight,
-        "Window dimensions from the ScrollImageToCenter function"
-      );
-      console.log(
-        window
-          .getComputedStyle(galleryContainerRef.current)
-          .transform.split(",")[4],
-        "computedStyle TranslateX from the ScrollImageToCenter function BEFORE transformation"
-      );
 
       const imageCenter = imageRect.left + imageRect.width / 2;
       const middleOfTheViewport = window.innerWidth / 2;
 
       const movementDistance = middleOfTheViewport - imageCenter;
       // Retrieving the current translateX value of the gallery container from the real dom (returnx matrix)
-      const galleryContainerCurrentTranslateX = window
-        .getComputedStyle(galleryContainerRef.current)
-        .transform.split(",")[4];
-      // Updating the translateX value of the gallery container to move it to the center of the viewport
-      const newTranslateX =
-        Number(galleryContainerCurrentTranslateX) + movementDistance;
-      galleryContainerRef.current.style.transform = `translateX(${newTranslateX}px)`;
 
-      console.log(
-        window
-          .getComputedStyle(galleryContainerRef.current)
-          .transform.split(",")[4],
-        "computedStyle TranslateX from the ScrollImageToCenter function after transformation"
+      const cssMatrix = new DOMMatrixReadOnly(
+        galleryContainerRef.current.style.transform
       );
+      const curernTranslateX = cssMatrix.m41;
+
+      const newTranslateX = Number(curernTranslateX) + movementDistance;
+      galleryContainerRef.current.style.transform = `translateX(${newTranslateX}px)`;
     }
   }; // Add an empty array as the second argument to useCallback
 
   /*
 
 
-
-
-
-
-
   */
   // defining click and drag events handlers for the gallery container
   const onPointerDown = (event: React.MouseEvent<HTMLDivElement>) => {
+    console.log("Pointer down event was triggered");
+    event.stopPropagation();
+    console.log("Pointer down event was triggered");
     if (galleryContainerRef.current) {
       // Resetting the transition property of the gallery container to none to prevent the gallery from delayed response to the
       // user interaction (dragging) when the user starts dragging the gallery container
@@ -249,21 +204,20 @@ export const GalleryContainer = () => {
       setMouseWasDown(true);
       // Recording the starting position of the pointer cursor at the start of the user interaction
       setMoveStartX(event.clientX);
-      // Retrieve the current translateX value of the gallery container from the real dom (returnx matrix)
-      const galleryContainerCurrentTranslateX = window
-        .getComputedStyle(galleryContainerRef.current)
-        .transform.split(",")[4];
-      // console.log(
-      //   "User Interaction was initiated",
-      //   galleryContainerCurrentTranslateX
-      // );
-      setContainerStartX(parseInt(galleryContainerCurrentTranslateX));
+
+      const cssMatrix = new DOMMatrixReadOnly(
+        galleryContainerRef.current.style.transform
+      );
+      const curernTranslateX = cssMatrix.m41;
+      setContainerStartX(curernTranslateX);
     } else {
       console.log("The element is not rendered yet or the ref is not attached");
     }
   };
 
   const onPointerMove = (event: React.MouseEvent<HTMLDivElement>) => {
+    event.stopPropagation();
+    console.log("Pointer move event was triggered");
     // Check if the mouse was down before the move event
     if (mouseWasDown) {
       const movementDistance = event.clientX - moveStartX;
@@ -283,6 +237,8 @@ export const GalleryContainer = () => {
   };
 
   const onPointerUp = (event: React.MouseEvent<HTMLDivElement>) => {
+    console.log("Pointer up event was triggered");
+    event.stopPropagation();
     // Terminate the drag action and calulations of the movement distance when the user releases the mouse button
     setMouseWasDown(false);
     // IF DRAGGING
@@ -320,19 +276,20 @@ export const GalleryContainer = () => {
     }
   };
 
-  const onPointerLeave = () => {
-    // Terminate the drag action and calulations of the movement distance when the pointer leaves the gallery container
-    setMouseWasDown(false);
-    if (isDragging && galleryContainerRef.current !== null) {
-      setIsDragging(false);
-      console.log("Cursor left the container");
-      galleryContainerRef.current.style.transition = "transform 0.1s ease-out";
-    }
-    const imageOnPointerLeave = imageRefs.get(currentImageIndex);
-    if (imageOnPointerLeave !== undefined) {
-      scrollImageToCenter(imageOnPointerLeave);
-    }
-  };
+  // const onPointerLeave = () => {
+  //   console.log("Pointer leave event was triggered");
+  //   // Terminate the drag action and calulations of the movement distance when the pointer leaves the gallery container
+  //   setMouseWasDown(false);
+  //   if (isDragging && galleryContainerRef.current !== null) {
+  //     setIsDragging(false);
+  //     console.log("Cursor left the container");
+  //     galleryContainerRef.current.style.transition = "transform 0.1s ease-out";
+  //   }
+  //   const imageOnPointerLeave = imageRefs.get(currentImageIndex);
+  //   if (imageOnPointerLeave !== undefined) {
+  //     scrollImageToCenter(imageOnPointerLeave);
+  //   }
+  // };
 
   const [scale, setScale] = useState<number>(1);
 
@@ -381,31 +338,40 @@ export const GalleryContainer = () => {
     }
   };
 
-  const onSlideRightClick = () => {
+  const onSlideRightClick = (event) => {
+    console.log("Slide right button was clicked");
+    event.stopPropagation();
     if (currentImageIndex < imageModules.length - 1) {
       setCurrentImageIndex((prev) => {
         const nextIndex = prev + 1;
         const nextImage = imageRefs.get(nextIndex);
+        console.log("Next image  is", nextImage);
+
         if (nextImage) {
+          console.log("Next image  is", nextImage);
           scrollImageToCenter(nextImage);
         }
+
         return nextIndex;
       });
     }
   };
 
-  const onSlideLeftClick = () => {
-    if (currentImageIndex > 0) {
-      setCurrentImageIndex((prev) => {
-        const prevIndex = prev - 1;
+  const onSlideLeftClick = useCallback(
+    (event: React.MouseEvent<HTMLButtonElement>) => {
+      console.log("Slide left button was clicked");
+      event.stopPropagation();
+      if (currentImageIndex > 0) {
+        const prevIndex = currentImageIndex - 1;
         const prevImage = imageRefs.get(prevIndex);
         if (prevImage) {
           scrollImageToCenter(prevImage);
         }
-        return prevIndex;
-      });
-    }
-  };
+        setCurrentImageIndex(prevIndex);
+      }
+    },
+    [scrollImageToCenter, currentImageIndex, imageRefs]
+  );
 
   return (
     <div className={styles.galleryWrapper} ref={galleryWrapperRef}>
@@ -434,7 +400,7 @@ export const GalleryContainer = () => {
           onPointerDown={onPointerDown}
           onPointerMove={onPointerMove}
           onPointerUp={onPointerUp}
-          onPointerLeave={onPointerLeave}
+          // onPointerLeave={onPointerLeave}
         >
           {imageModules.map((imageModule, index: number) => (
             <img
