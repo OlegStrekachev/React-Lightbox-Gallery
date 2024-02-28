@@ -2,9 +2,6 @@ import styles from "./GalleryContainer.module.css";
 import { useRef, useState, useEffect, useCallback } from "react";
 import SlideRightIcon from "../assets/vector/slideRightIcon.svg";
 
-// Custom hooks imports
-import { useWindowResizeListener } from "../hooks/useWindowResizeListener";
-
 // Explicitly stating the expected structure of the imported modules
 type ImageModule = {
   default: string;
@@ -28,6 +25,10 @@ const imageModules: ImageModule[] = Object.values(moduleFiles);
 */
 
 export const GalleryContainer = () => {
+  /*****************************************************
+  DECLARING STATE VARIABLES
+  *****************************************************/
+
   // Screen orienbtation tracking
 
   const [orientation, setOrientation] = useState<string>("");
@@ -50,21 +51,41 @@ export const GalleryContainer = () => {
   const galleryWrapperRef = useRef<HTMLDivElement>(null);
   const galleryContainerWrapperRef = useRef<HTMLDivElement>(null);
 
-  const handleOrientationChange = () => {
-    const newOrientation =
-      window.innerHeight > window.innerWidth ? "portrait" : "landscape";
-    if (newOrientation !== orientation) {
-      console.log("Orientation has changed");
-      document.body.setAttribute("data-orientation", newOrientation);
-      setOrientation(newOrientation);
-      setOrientationHasChanged(true); // This flag could be reset somewhere else in your component as needed
-    } else {
-      setOrientationHasChanged(false);
-    }
-  };
+  /*****************************************************
+  DECLARING EFFECTS
+  *****************************************************/
 
-  // Custom hook to listen for window resize events and update the viewport height custom property
-  useWindowResizeListener(handleOrientationChange);
+  // Hook to handle window resize events and detect orientation changes.
+
+  useEffect(() => {
+    const handleOrientationChange = () => {
+      const newOrientation =
+        window.innerHeight > window.innerWidth ? "portrait" : "landscape";
+      if (newOrientation !== orientation) {
+        console.log("Orientation has changed");
+        document.body.setAttribute("data-orientation", newOrientation);
+        setOrientation(newOrientation);
+        setOrientationHasChanged(true); // This flag could be reset somewhere else in your component as needed
+      }
+    };
+
+    const setViewportHeight = () => {
+      console.log("Viewport resize event was triggered");
+      const vh = window.innerHeight * 0.01;
+      document.documentElement.style.setProperty("--vh", `${vh}px`);
+    };
+
+    const handleResize = () => {
+      setViewportHeight();
+      handleOrientationChange(); // Call the passed function to handle orientation logic
+    };
+
+    handleResize(); // Initial call to set everything up
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, [orientation]);
+
+  // Hook to react to the orientation change and center the image closest to the center of the viewport.
 
   useEffect(() => {
     if (orientationHasChanged) {
@@ -87,56 +108,8 @@ export const GalleryContainer = () => {
     }
   }, [orientationHasChanged, currentImageIndex, imageRefs]);
 
-  // const handleOrientationChange = () => {
-  //   // const oldOrientation = orientation;
-
-  //   setTimeout(() => {
-  //     window.innerWidth > window.innerHeight
-  //       ? console.trace()
-  //       : console.log("Portrait");
-  //   }, 1000);
-
-  // if (newOrientation !== orientation) {
-  //   setOrientation(newOrientation);
-  //   document.body.setAttribute(
-  //     "data-orientation",
-  //     newOrientation.split("-")[0]
-  //   );
-  //   const image = imageRefs.get(currentImageIndex);
-  //   const imageRect = image?.getBoundingClientRect();
-  //   let imageCenter
-  //   let lastWidth = 0;
-  //   const checkLayoutStability = () => {
-  //     requestAnimationFrame(() => {
-  //       const currentWidth = window.innerWidth;
-  //         galleryContainerRef.current?.getBoundingClientRect();
-  //       if (currentWidth !== lastWidth) {
-  //         console.log("Width is still changing", currentWidth);
-  //         lastWidth = currentWidth;
-  //         checkLayoutStability(); // Repeat if the width is still changing
-  //       } else {
-  //         // Width has stabilized, proceed
-  //         console.log("Width has stabilized, proceed", window.innerWidth);
-
-  //         if (image) {
-  //           scrollImageToCenter(image);
-  //         } else {
-  //           console.log("Image is not rendered yet");
-  //         }
-  //       }
-  //     });
-  //   };
-
-  //   // Trigger this function in your orientation change handler
-  //   checkLayoutStability();
-
-  //   // setOrientationHasChanged(true);
-  // }
-  // };
-  // Effect responsible for updating the orientation state when the orientation changes
-
-  // useEffect is designed to finalize image centering to the middle of the viewport after pointer release
-  // When drag action is ended (onpointerup), the image closest to the center of the viewport is centered
+  // Hook reacting to the pointer up event and centering the image closest to the center of the viewport at the point
+  // where the pointer was released after dragging the gallery container
 
   useEffect(() => {
     if (shouldCenterImage && currentImageIndex !== null) {
@@ -155,7 +128,7 @@ export const GalleryContainer = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [shouldCenterImage]);
 
-  // Utility function to find the closest image to the viewport center
+  // Utility function to find the closest image to the viewport center and update the current image index state
   const findClosestImageIndex = (): number | null => {
     if (galleryContainerRef.current) {
       let closestIndex = null;
@@ -178,8 +151,6 @@ export const GalleryContainer = () => {
     }
     return null;
   };
-
-  // Event listener for orientation change. It centers the image closest to the center of the viewport
 
   // Utility function that takes an image as an argument and scrolls gallery container parent to the center of the viewport
   const scrollImageToCenter = (image: HTMLImageElement) => {
@@ -209,15 +180,13 @@ export const GalleryContainer = () => {
     }
   }; // Add an empty array as the second argument to useCallback
 
-  /*
-      const imageCenter = imageRect.left + imageRect.width / 2;
-     
+  /*****************************************************
+    DEFINING EVENT HANDLERS
+    *****************************************************/
 
-
-  */
   // defining click and drag events handlers for the gallery container
+
   const onPointerDown = (event: React.MouseEvent<HTMLDivElement>) => {
-    console.log("Pointer down event was triggered");
     event.stopPropagation();
     console.log("Pointer down event was triggered");
     if (galleryContainerRef.current) {
@@ -361,6 +330,9 @@ export const GalleryContainer = () => {
       console.log("Zooming in");
     }
   };
+
+  // These are wrapped in useCallback to prevent the functions from being recreated on every render since
+  // scrollImageToCenter function relies on recalculating dom values.
 
   const onSlideRightClick = useCallback(
     (event: React.MouseEvent<HTMLButtonElement>) => {
