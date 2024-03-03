@@ -1,5 +1,5 @@
 import styles from "./GalleryContainer.module.css";
-import { useRef, useState, useEffect, useCallback } from "react";
+import { useRef, useState, useEffect } from "react";
 import SlideRightIcon from "../assets/vector/slideRightIcon.svg";
 
 // Explicitly stating the expected structure of the imported modules
@@ -58,29 +58,47 @@ export const GalleryContainer = () => {
   // Hook to handle window resize events and detect orientation changes.
 
   useEffect(() => {
-    const handleOrientationChange = () => {
+    // setting viewport height on initial load
+    const setViewportHeight = () => {
+      console.log("Setting initial viewport height");
+      const vh = window.innerHeight * 0.01;
+      document.documentElement.style.setProperty("--vh", `${vh}px`);
+    };
+    setViewportHeight();
+  }, []);
+
+  useEffect(() => {
+    console.log("Initial setup effect A was triggered");
+    const determineAndSetOrientation = () => {
       const newOrientation =
         window.innerHeight > window.innerWidth ? "portrait" : "landscape";
       if (newOrientation !== orientation) {
         console.log("Orientation has changed");
         document.body.setAttribute("data-orientation", newOrientation);
         setOrientation(newOrientation);
-        setOrientationHasChanged(true); // This flag could be reset somewhere else in your component as needed
+        // triggers recentering on orientation change only if the orientation has already been set and then changed
+        if (orientation !== "") {
+          setOrientationHasChanged(true);
+        }
       }
     };
 
     const setViewportHeight = () => {
       console.log("Viewport resize event was triggered");
       const vh = window.innerHeight * 0.01;
+      console.log(window.innerHeight, "before");
       document.documentElement.style.setProperty("--vh", `${vh}px`);
+      console.log(window.innerHeight, "after");
     };
 
     const handleResize = () => {
       setViewportHeight();
-      handleOrientationChange(); // Call the passed function to handle orientation logic
+      determineAndSetOrientation(); // Call the passed function to handle orientation logic
+      console.log("Resize event was triggered");
     };
 
-    handleResize(); // Initial call to set everything up
+    determineAndSetOrientation(); // Call this from the hook itself to setup  the initial orientation
+
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, [orientation]);
@@ -89,17 +107,9 @@ export const GalleryContainer = () => {
 
   useEffect(() => {
     if (orientationHasChanged) {
-      if (galleryContainerRef.current) {
-        const cssMatrix = new DOMMatrixReadOnly(
-          galleryContainerRef.current.style.transform
-        );
-        const curernTranslateX = cssMatrix.m41;
-        console.log("Current translateX value is", curernTranslateX);
-      } else {
-        console.log("Gallery container is not rendered yet");
-      }
-
-      console.log("Orientation has changed");
+      console.log(
+        "Block responsible for centering the image after orientation chnage was executed"
+      );
       const image = imageRefs.get(currentImageIndex);
       if (image) {
         scrollImageToCenter(image);
@@ -182,7 +192,7 @@ export const GalleryContainer = () => {
 
   /*****************************************************
     DEFINING EVENT HANDLERS
-    *****************************************************/
+  *****************************************************/
 
   // defining click and drag events handlers for the gallery container
 
@@ -210,7 +220,6 @@ export const GalleryContainer = () => {
 
   const onPointerMove = (event: React.MouseEvent<HTMLDivElement>) => {
     event.stopPropagation();
-    console.log("Pointer move event was triggered");
     // Check if the mouse was down before the move event
     if (mouseWasDown) {
       const movementDistance = event.clientX - moveStartX;
@@ -269,107 +278,103 @@ export const GalleryContainer = () => {
     }
   };
 
-  // const onPointerLeave = () => {
-  //   console.log("Pointer leave event was triggered");
-  //   // Terminate the drag action and calulations of the movement distance when the pointer leaves the gallery container
-  //   setMouseWasDown(false);
-  //   if (isDragging && galleryContainerRef.current !== null) {
-  //     setIsDragging(false);
-  //     console.log("Cursor left the container");
-  //     galleryContainerRef.current.style.transition = "transform 0.1s ease-out";
-  //   }
-  //   const imageOnPointerLeave = imageRefs.get(currentImageIndex);
-  //   if (imageOnPointerLeave !== undefined) {
-  //     scrollImageToCenter(imageOnPointerLeave);
-  //   }
-  // };
-
-  const [scale, setScale] = useState<number>(1);
-
-  const onWheelScroll = (event: React.WheelEvent<HTMLDivElement>) => {
-    event.preventDefault(); // Prevent the default scrolling behavior
-
-    setScale((prevScale) => {
-      const zoomableImage = mainImageRef.current;
-
-      if (zoomableImage) {
-        // Calculate the factor by which to zoom
-        const zoomFactor = event.deltaY * -0.001;
-
-        if (
-          galleryWrapperRef.current &&
-          galleryContainerWrapperRef.current &&
-          mainImageContainerRef.current
-        ) {
-          if (scale > 1) {
-            mainImageContainerRef.current.style.gridArea = `1 / 1 / -1 / -1`;
-            galleryContainerWrapperRef.current.style.transform =
-              "translateY(100%)";
-            galleryContainerWrapperRef.current.style.opacity = "0";
-          } else {
-            mainImageContainerRef.current.style.gridArea = `1 / 2 / 2 / 3`;
-            galleryContainerWrapperRef.current.style.transform =
-              "translateY(0)";
-            galleryContainerWrapperRef.current.style.opacity = "1";
-          }
-        }
-
-        // Calculate the new scale, limiting it between 1 and 4
-        let newScale = prevScale + zoomFactor;
-        newScale = Math.max(1, Math.min(newScale, 4));
-
-        zoomableImage.style.transform = `scale(${newScale})`;
-
-        return newScale;
+  const onPointerLeave = () => {
+    // Terminate the drag action and calulations of the movement distance when the pointer leaves the gallery container
+    if (isDragging && galleryContainerRef.current !== null && mouseWasDown) {
+      console.log(
+        "Pointer leave event was triggered and condition to execute code block was met"
+      );
+      setIsDragging(false);
+      setMouseWasDown(false);
+      console.log("Cursor left the container");
+      galleryContainerRef.current.style.transition = "transform 0.1s ease-out";
+      const imageOnPointerLeave = imageRefs.get(currentImageIndex);
+      if (imageOnPointerLeave !== undefined) {
+        scrollImageToCenter(imageOnPointerLeave);
       }
-    });
-
-    if (event.deltaY > 0) {
-      console.log("Zooming out");
-    } else {
-      console.log("Zooming in");
     }
   };
+
+  // const [scale, setScale] = useState<number>(1);
+
+  // const onWheelScroll = (event: React.WheelEvent<HTMLDivElement>) => {
+  //   event.preventDefault(); // Prevent the default scrolling behavior
+
+  //   setScale((prevScale) => {
+  //     const zoomableImage = mainImageRef.current;
+
+  //     if (zoomableImage) {
+  //       // Calculate the factor by which to zoom
+  //       const zoomFactor = event.deltaY * -0.001;
+
+  //       if (
+  //         galleryWrapperRef.current &&
+  //         galleryContainerWrapperRef.current &&
+  //         mainImageContainerRef.current
+  //       ) {
+  //         if (scale > 1) {
+  //           mainImageContainerRef.current.style.gridArea = `1 / 1 / -1 / -1`;
+  //           galleryContainerWrapperRef.current.style.transform =
+  //             "translateY(100%)";
+  //           galleryContainerWrapperRef.current.style.opacity = "0";
+  //         } else {
+  //           mainImageContainerRef.current.style.gridArea = `1 / 2 / 2 / 3`;
+  //           galleryContainerWrapperRef.current.style.transform =
+  //             "translateY(0)";
+  //           galleryContainerWrapperRef.current.style.opacity = "1";
+  //         }
+  //       }
+
+  //       // Calculate the new scale, limiting it between 1 and 4
+  //       let newScale = prevScale + zoomFactor;
+  //       newScale = Math.max(1, Math.min(newScale, 4));
+
+  //       zoomableImage.style.transform = `scale(${newScale})`;
+
+  //       return newScale;
+  //     }
+  //   });
+
+  //   if (event.deltaY > 0) {
+  //     console.log("Zooming out");
+  //   } else {
+  //     console.log("Zooming in");
+  //   }
+  // };
 
   // These are wrapped in useCallback to prevent the functions from being recreated on every render since
   // scrollImageToCenter function relies on recalculating dom values.
 
-  const onSlideRightClick = useCallback(
-    (event: React.MouseEvent<HTMLButtonElement>) => {
-      console.log("Slide right button was clicked");
-      event.stopPropagation();
-      navigator.vibrate(50);
-      if (currentImageIndex < imageModules.length - 1) {
-        const nextIndex = currentImageIndex + 1;
-        const nextImage = imageRefs.get(nextIndex);
+  const onSlideRightClick = (event: React.MouseEvent<HTMLButtonElement>) => {
+    console.log("Slide right button was clicked");
+    event.stopPropagation();
+    navigator.vibrate(50);
+    if (currentImageIndex < imageModules.length - 1) {
+      const nextIndex = currentImageIndex + 1;
+      const nextImage = imageRefs.get(nextIndex);
+      console.log("Next image  is", nextImage);
+
+      if (nextImage) {
         console.log("Next image  is", nextImage);
-
-        if (nextImage) {
-          console.log("Next image  is", nextImage);
-          scrollImageToCenter(nextImage);
-        }
-        setCurrentImageIndex(nextIndex);
+        scrollImageToCenter(nextImage);
       }
-    },
-    [scrollImageToCenter, currentImageIndex, imageRefs]
-  );
+      setCurrentImageIndex(nextIndex);
+    }
+  };
 
-  const onSlideLeftClick = useCallback(
-    (event: React.MouseEvent<HTMLButtonElement>) => {
-      console.log("Slide left button was clicked");
-      event.stopPropagation();
-      navigator.vibrate(50);
-      if (currentImageIndex > 0) {
-        const prevIndex = currentImageIndex - 1;
-        const prevImage = imageRefs.get(prevIndex);
-        if (prevImage) {
-          scrollImageToCenter(prevImage);
-        }
-        setCurrentImageIndex(prevIndex);
+  const onSlideLeftClick = (event: React.MouseEvent<HTMLButtonElement>) => {
+    console.log("Slide left button was clicked");
+    event.stopPropagation();
+    navigator.vibrate(50);
+    if (currentImageIndex > 0) {
+      const prevIndex = currentImageIndex - 1;
+      const prevImage = imageRefs.get(prevIndex);
+      if (prevImage) {
+        scrollImageToCenter(prevImage);
       }
-    },
-    [scrollImageToCenter, currentImageIndex, imageRefs]
-  );
+      setCurrentImageIndex(prevIndex);
+    }
+  };
 
   return (
     <div className={styles.galleryWrapper} ref={galleryWrapperRef}>
@@ -377,7 +382,7 @@ export const GalleryContainer = () => {
         {imageModules[currentImageIndex] && (
           <img
             ref={mainImageRef}
-            onWheel={onWheelScroll}
+            // onWheel={onWheelScroll}
             key={currentImageIndex}
             src={imageModules[currentImageIndex].default}
             alt={`Gallery item ${currentImageIndex}`}
@@ -398,7 +403,7 @@ export const GalleryContainer = () => {
           onPointerDown={onPointerDown}
           onPointerMove={onPointerMove}
           onPointerUp={onPointerUp}
-          // onPointerLeave={onPointerLeave}
+          onPointerLeave={onPointerLeave}
         >
           {imageModules.map((imageModule, index: number) => (
             <img
