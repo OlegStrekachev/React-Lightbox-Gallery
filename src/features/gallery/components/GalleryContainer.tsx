@@ -26,8 +26,8 @@ const imageModules: ImageModule[] = Object.values(moduleFiles);
 
 export const GalleryContainer = () => {
   /*****************************************************
-  DECLARING STATE VARIABLES
-  *****************************************************/
+DECLARING STATE VARIABLES
+*****************************************************/
 
   // Screen orienbtation tracking
 
@@ -53,8 +53,8 @@ export const GalleryContainer = () => {
   const slideLeftIconRef = useRef<HTMLButtonElement>(null);
 
   /*****************************************************
-  DECLARING EFFECTS
-  *****************************************************/
+DECLARING EFFECTS
+*****************************************************/
 
   // Hook to handle window resize events and detect orientation changes.
 
@@ -192,8 +192,8 @@ export const GalleryContainer = () => {
   }; // Add an empty array as the second argument to useCallback
 
   /*****************************************************
-    DEFINING EVENT HANDLERS
-  *****************************************************/
+  DEFINING EVENT HANDLERS FOR THE GALLERY PREVIEW CONTAINER
+*****************************************************/
 
   // defining click and drag events handlers for the gallery container
 
@@ -326,8 +326,8 @@ export const GalleryContainer = () => {
   };
 
   /*****************************************************
-    CODE BLOCK RESPONSIBLE FOR MAIN IMAGE TRANSLATE AND SCROLL ZOOM ON CURSOR
-  *****************************************************/
+  CODE BLOCK RESPONSIBLE FOR MAIN IMAGE TRANSLATE AND SCROLL ZOOM ON CURSOR
+*****************************************************/
 
   const [zoomLevel, setZoomLevel] = useState(1);
   const [scrollZoomfunctionality, setScrollZoomfunctionality] = useState(false);
@@ -388,7 +388,7 @@ export const GalleryContainer = () => {
 
   const triggerZoomFunctionality = useRef(false);
 
-  // Effect responsible for initiating of full screen zoom and pan functionality
+  // Effect responsible for tracking and initiating of full screen zoom and pan functionality
 
   useEffect(() => {
     if (
