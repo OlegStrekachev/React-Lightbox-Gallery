@@ -46,7 +46,7 @@
 }
 
 .galleryContainer {
-  padding-top: 1rem;
+  padding: 0.5rem;
   height: 100%;
   width: auto;
   display: flex;

@@ -336,6 +336,8 @@ export const GalleryContainer = () => {
   const [initialY, setInitialY] = useState(0);
   const [currentTransformStart, setCurrentTransformStart] = useState([0, 0]);
 
+  // Three event handlers responsible for pannning while in the full screen zoom mode
+
   const onPointerDownWindowHandler = (
     event: React.PointerEvent<HTMLDivElement>
   ) => {
@@ -386,6 +388,8 @@ export const GalleryContainer = () => {
 
   const triggerZoomFunctionality = useRef(false);
 
+  // Effect responsible for initiating of full screen zoom and pan functionality
+
   useEffect(() => {
     if (
       mainImageContainerRef.current &&
@@ -420,6 +424,8 @@ export const GalleryContainer = () => {
     galleryContainerWrapperRef,
     mainImageContainerRef,
   ]);
+
+  // Handler for the wheel event on the window to trigger the zoom functionality
 
   const onWheelWindowHandler = (event: React.WheelEvent<HTMLDivElement>) => {
     triggerZoomFunctionality.current = true;
