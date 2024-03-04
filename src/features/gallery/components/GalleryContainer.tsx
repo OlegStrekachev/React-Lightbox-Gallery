@@ -1,7 +1,6 @@
 import styles from "./GalleryContainer.module.css";
 import { useRef, useState, useEffect } from "react";
 import SlideRightIcon from "../assets/vector/slideRightIcon.svg";
-import RedDot from "../assets/graphics/reddot.png";
 
 // Explicitly stating the expected structure of the imported modules
 type ImageModule = {
@@ -50,7 +49,6 @@ export const GalleryContainer = () => {
   const galleryContainerRef = useRef<HTMLDivElement>(null);
   const galleryWrapperRef = useRef<HTMLDivElement>(null);
   const galleryContainerWrapperRef = useRef<HTMLDivElement>(null);
-  const redDotRef = useRef<HTMLImageElement>(null);
   const slideRightIconRef = useRef<HTMLButtonElement>(null);
   const slideLeftIconRef = useRef<HTMLButtonElement>(null);
 
@@ -298,9 +296,8 @@ export const GalleryContainer = () => {
     }
   };
 
-  const onSlideRightClick = (event: React.MouseEvent<HTMLButtonElement>) => {
+  const onSlideRightClick = () => {
     console.log("Slide right button was clicked");
-    event.stopPropagation();
     navigator.vibrate(50);
     if (currentImageIndex < imageModules.length - 1) {
       const nextIndex = currentImageIndex + 1;
@@ -315,9 +312,8 @@ export const GalleryContainer = () => {
     }
   };
 
-  const onSlideLeftClick = (event: React.MouseEvent<HTMLButtonElement>) => {
+  const onSlideLeftClick = () => {
     console.log("Slide left button was clicked");
-    event.stopPropagation();
     navigator.vibrate(50);
     if (currentImageIndex > 0) {
       const prevIndex = currentImageIndex - 1;
@@ -365,25 +361,6 @@ export const GalleryContainer = () => {
   const onPointerMoveWindowHandler = (
     event: React.PointerEvent<HTMLDivElement>
   ) => {
-    const dot = redDotRef.current;
-    const container = galleryWrapperRef.current;
-    const dotRect = dot?.getBoundingClientRect();
-    const containerRect = container?.getBoundingClientRect();
-
-    const x = event.clientX - containerRect!.left;
-    const y = event.clientY - containerRect!.top;
-
-    // console.log(x, y);
-
-    const centerXoffset = dotRect!.width / 2;
-    const centerYoffset = dotRect!.height / 2;
-
-    if (dot) {
-      dot.style.transform = `translate(${x - centerXoffset}px, ${
-        y - centerYoffset
-      }px)`;
-    }
-
     if (mainImageContainerRef.current && pointerWasDownWindow) {
       const movementDistanceX = event.clientX - initialX;
       const movementDistanceY = event.clientY - initialY;
@@ -405,6 +382,10 @@ export const GalleryContainer = () => {
     }
   };
 
+  const zoomLevelRef = useRef(1); // Start with a zoom level of 1
+
+  const triggerZoomFunctionality = useRef(false);
+
   useEffect(() => {
     if (
       mainImageContainerRef.current &&
@@ -413,85 +394,72 @@ export const GalleryContainer = () => {
       slideRightIconRef.current
     ) {
       if (zoomLevel > 1) {
-        mainImageContainerRef.current.style.gridArea = `1 / 1 / -1 / -1`;
+        // mainImageContainerRef.current.style.gridArea = `1 / 1 / -1 / -1`;
         galleryContainerWrapperRef.current.style.transform = "translateY(100%)";
         galleryContainerWrapperRef.current.style.opacity = "0";
-        slideLeftIconRef.current.style.display = "none";
-        slideRightIconRef.current.style.display = "none";
+        slideLeftIconRef.current.style.visibility = "hidden";
+        slideRightIconRef.current.style.visibility = "hidden";
       } else {
-        mainImageContainerRef.current.style.gridArea = `1 / 2 / 2 / 3`;
+        // mainImageContainerRef.current.style.gridArea = `1 / 2 / 2 / 3`;
         galleryContainerWrapperRef.current.style.transform = "translateY(0)";
         mainImageContainerRef.current.style.transform =
           "translate(0, 0) scale(1)";
         galleryContainerWrapperRef.current.style.opacity = "1";
-        slideLeftIconRef.current.style.display = "";
-        slideRightIconRef.current.style.display = "";
+        slideLeftIconRef.current.style.visibility = "visible";
+        slideRightIconRef.current.style.visibility = "visible";
         setScrollZoomfunctionality(false);
         setPointerWasDownWindow(false);
       }
     }
-  }, [zoomLevel, scrollZoomfunctionality]);
+  }, [
+    zoomLevel,
+    scrollZoomfunctionality,
+    pointerWasDownWindow,
+    slideLeftIconRef,
+    slideRightIconRef,
+    galleryContainerWrapperRef,
+    mainImageContainerRef,
+  ]);
 
   const onWheelWindowHandler = (event: React.WheelEvent<HTMLDivElement>) => {
+    triggerZoomFunctionality.current = true;
+    const zoomSpeed = 0.1;
+    const direction = event.deltaY < 0 ? 1 : -1; // Determine zoom in or out based on scroll direction
+    let newZoomValue =
+      direction > 0
+        ? zoomLevelRef.current * (1 + zoomSpeed)
+        : zoomLevelRef.current / (1 + zoomSpeed);
+
+    const minZoom = 1;
+    const maxZoom = 4;
+    newZoomValue = Math.min(Math.max(minZoom, newZoomValue), maxZoom);
+    setZoomLevel(newZoomValue);
     setScrollZoomfunctionality(true);
-    console.log("Scroll event was triggered");
 
     if (mainImageContainerRef.current) {
-      setZoomLevel((prev) => {
-        const zoomSpeed = 0.1;
-        const direction = event.deltaY < 0 ? 1 : -1; // Determine zoom in or out based on scroll direction
-        const newZoomValue =
-          direction > 0 ? prev * (1 + zoomSpeed) : prev / (1 + zoomSpeed);
+      const imageRect = mainImageContainerRef.current.getBoundingClientRect();
 
-        const minZoom = 1;
-        const maxZoom = 4;
-        const newLimitedZoomValue = Math.min(
-          Math.max(minZoom, newZoomValue),
-          maxZoom
-        );
-        if (
-          mainImageContainerRef.current &&
-          mainImageContainerRef.current &&
-          galleryContainerWrapperRef.current
-        ) {
-          const imageRect =
-            mainImageContainerRef.current.getBoundingClientRect();
+      const mouseXRelativeToImage = event.clientX - imageRect.left;
+      const mouseYRelativeToImage = event.clientY - imageRect.top;
 
-          console.log(imageRect, "imageRect");
+      const scalingFactor = newZoomValue / zoomLevelRef.current;
 
-          // Calculating coordinates of the point under the mouse cursor relative to the image
-          const mouseXRelativeToImage = event.clientX - imageRect.left;
-          const mouseYRelativeToImage = event.clientY - imageRect.top;
+      const deltaX =
+        mouseXRelativeToImage * scalingFactor - mouseXRelativeToImage;
+      const deltaY =
+        mouseYRelativeToImage * scalingFactor - mouseYRelativeToImage;
 
-          console.log(
-            mouseXRelativeToImage,
-            "mouseXRelativeToImage",
-            mouseYRelativeToImage,
-            "mouseYRelativeToImage"
-          );
+      let cssMatrix = new DOMMatrixReadOnly(
+        mainImageContainerRef.current.style.transform
+      );
+      const currentTranslateX = cssMatrix.m41;
+      const currentTranslateY = cssMatrix.m42;
 
-          const scalingFactor = newLimitedZoomValue / prev;
+      mainImageContainerRef.current.style.transform = `translate(${
+        currentTranslateX - deltaX
+      }px, ${currentTranslateY - deltaY}px) scale(${newZoomValue})`;
 
-          console.log(scalingFactor, "scalingFactor");
-
-          const deltaX =
-            mouseXRelativeToImage * scalingFactor - mouseXRelativeToImage;
-          const deltaY =
-            mouseYRelativeToImage * scalingFactor - mouseYRelativeToImage;
-
-          const cssMatrix = new DOMMatrixReadOnly(
-            mainImageContainerRef.current.style.transform
-          );
-          const currentTranslateX = cssMatrix.m41;
-          const currentTranslateY = cssMatrix.m42;
-
-          mainImageContainerRef.current.style.transform = `translate(${
-            currentTranslateX - deltaX
-          }px, ${currentTranslateY - deltaY}px) scale(${newLimitedZoomValue})`;
-        }
-
-        return newLimitedZoomValue;
-      });
+      zoomLevelRef.current = newZoomValue; // Update the current zoom level stored in the ref
     }
   };
 
@@ -504,12 +472,6 @@ export const GalleryContainer = () => {
       onPointerUp={onPointerUpWindowHandler}
       onWheel={onWheelWindowHandler}
     >
-      <img
-        src={RedDot}
-        alt="RedDot"
-        className={styles.redDot}
-        ref={redDotRef}
-      />
       <div className={styles.mainImageContainer} ref={mainImageContainerRef}>
         {imageModules[currentImageIndex] && (
           <img
