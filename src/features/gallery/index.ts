@@ -1,1 +1,1 @@
-export { GalleryContainer} from './components/GalleryContainer';
+export { LightboxModal } from "./components/LightboxModal";

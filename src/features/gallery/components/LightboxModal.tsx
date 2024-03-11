@@ -1,5 +1,5 @@
-import styles from "./GalleryContainer.module.css";
-import { useRef, useState, useEffect } from "react";
+import styles from "./LightboxModal.module.css";
+import { useRef, useState, useEffect, useCallback } from "react";
 import SlideRightIcon from "../assets/vector/slideRightIcon.svg";
 
 // Explicitly stating the expected structure of the imported modules
@@ -24,7 +24,7 @@ const imageModules: ImageModule[] = Object.values(moduleFiles);
 [{"key1": "value1"}, {"key2": "value2"}]
 */
 
-export const GalleryContainer = () => {
+export const LightboxModal = () => {
   /*****************************************************
 DECLARING STATE VARIABLES
 *****************************************************/
@@ -55,6 +55,8 @@ DECLARING STATE VARIABLES
   /*****************************************************
 DECLARING EFFECTS
 *****************************************************/
+
+  // Adding key event listener on the component mount to handle the keyboard navigation
 
   // Hook to handle window resize events and detect orientation changes.
 
@@ -167,6 +169,7 @@ DECLARING EFFECTS
   const scrollImageToCenter = (image: HTMLImageElement) => {
     console.log("scrollImageToCenter function was called");
     if (galleryContainerRef.current && image) {
+      setTimeout(() => {}, 100);
       const imageRect = image.getBoundingClientRect();
       const imageCenter = imageRect.left + imageRect.width / 2;
       console.log("Image center is from function", imageCenter);
@@ -296,10 +299,10 @@ DECLARING EFFECTS
     }
   };
 
-  const onSlideRightClick = () => {
+  const onSlideRightClick = useCallback(() => {
     console.log("Slide right button was clicked");
     navigator.vibrate(50);
-    if (currentImageIndex < imageModules.length - 1) {
+    if (currentImageIndex < imageModules.length - 1 && imageRefs.size > 0) {
       const nextIndex = currentImageIndex + 1;
       const nextImage = imageRefs.get(nextIndex);
       console.log("Next image  is", nextImage);
@@ -310,9 +313,9 @@ DECLARING EFFECTS
       }
       setCurrentImageIndex(nextIndex);
     }
-  };
+  }, [currentImageIndex, imageRefs, imageModules.length]);
 
-  const onSlideLeftClick = () => {
+  const onSlideLeftClick = useCallback(() => {
     console.log("Slide left button was clicked");
     navigator.vibrate(50);
     if (currentImageIndex > 0) {
@@ -323,7 +326,37 @@ DECLARING EFFECTS
       }
       setCurrentImageIndex(prevIndex);
     }
-  };
+  }, [currentImageIndex, imageRefs]);
+
+  useEffect(() => {
+    // Create an event handler
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      console.log("Keydown event was triggered", event);
+
+      // Repeat keydown events should be ignored since continous pressing will mess up function calls
+
+      if (event.repeat) {
+        console.log("Keydown event was triggered but it was a repeat event");
+        return;
+      }
+
+      if (event.key === "ArrowRight") {
+        onSlideRightClick();
+      } else if (event.key === "ArrowLeft") {
+        onSlideLeftClick();
+      } else {
+        console.log("Keydown event was triggered but no action was taken");
+      }
+    };
+    // Add the event listener to the window
+    window.addEventListener("keydown", handleKeyDown);
+
+    // Remove the event listener when the component is unmounted
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [onSlideRightClick, onSlideLeftClick]);
 
   /*****************************************************
   CODE BLOCK RESPONSIBLE FOR MAIN IMAGE TRANSLATE AND SCROLL ZOOM ON CURSOR

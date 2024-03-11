@@ -1,7 +1,7 @@
-import { GalleryContainer } from "@/features/gallery";
+import { LightboxModal } from "@/features/gallery";
 
 function App() {
-  return <GalleryContainer />;
+  return <LightboxModal />;
 }
 
 export default App;
