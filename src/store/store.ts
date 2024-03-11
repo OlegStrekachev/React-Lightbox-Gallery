@@ -1,8 +1,10 @@
-import { configureStore } from '@reduxjs/toolkit';
-import { api } from '@/api/api';
+import { configureStore } from "@reduxjs/toolkit";
+import { modalSlice } from "./slices/modalSlice";
+import { api } from "@/api/api";
 
 export const store = configureStore({
   reducer: {
+    modals: modalSlice.reducer,
     // Other reducers...
     [api.reducerPath]: api.reducer,
   },

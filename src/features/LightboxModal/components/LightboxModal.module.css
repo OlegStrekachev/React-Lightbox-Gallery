@@ -1,17 +1,19 @@
-* {
-  touch-action: none;
-  -webkit-tap-highlight-color: transparent;
-}
-
 .galleryWrapper {
   height: calc(var(--vh, 1vh) * 100);
-  position: relative;
+  width: 100%;
+  position: fixed;
+  top: 0;
   display: grid;
   grid-template-columns: 1fr 10fr 1fr;
   grid-template-rows: 80% 20%;
   background-color: rgb(32, 32, 32);
   overflow: hidden;
   transform-origin: 0 0;
+}
+
+.galleryWrapper > * {
+  touch-action: none;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .mainImageContainer {
@@ -112,6 +114,24 @@
   height: 4rem;
   aspect-ratio: 1/1;
   object-fit: cover;
+  z-index: 1;
+}
+
+.closeButton {
+  position: absolute;
+  top: 0;
+  right: 0;
+  cursor: pointer;
+  background: none;
+  transition: color 0.3s;
+  font-size: 3rem;
+  color: white;
+
+  width: 3rem;
+  height: 3rem;
+
+  padding: 0;
+  border: none;
   z-index: 1;
 }
 

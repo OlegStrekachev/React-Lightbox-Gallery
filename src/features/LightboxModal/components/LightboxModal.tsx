@@ -1,6 +1,8 @@
 import styles from "./LightboxModal.module.css";
 import { useRef, useState, useEffect, useCallback } from "react";
 import SlideRightIcon from "../assets/vector/slideRightIcon.svg";
+import { useSelector, useDispatch } from "react-redux";
+import { closeModal } from "@/store/slices/modalSlice";
 
 // Explicitly stating the expected structure of the imported modules
 type ImageModule = {
@@ -25,9 +27,14 @@ const imageModules: ImageModule[] = Object.values(moduleFiles);
 */
 
 export const LightboxModal = () => {
+  const dispatch = useDispatch();
   /*****************************************************
 DECLARING STATE VARIABLES
 *****************************************************/
+
+  const initialIndex = useSelector((state) => state.modals.initialIndex);
+
+  console.log("Initial index is", initialIndex);
 
   // Screen orienbtation tracking
 
@@ -56,6 +63,27 @@ DECLARING STATE VARIABLES
 DECLARING EFFECTS
 *****************************************************/
 
+  // Hook to set up initial index of the lightbox
+
+  useEffect(() => {
+    setCurrentImageIndex(Number(initialIndex));
+  }, [initialIndex]);
+
+  useEffect(() => {
+    // This assumes initialIndex and images are set correctly and are available
+    const timeoutId = setTimeout(() => {
+      if (initialIndex !== null) {
+        const imageElement = imageRefs.get(Number(initialIndex));
+        if (imageElement) {
+          console.log("Initial index was set to", imageElement);
+          scrollImageToCenter(imageElement);
+        }
+      }
+    }, 200); // Adjust delay as needed
+
+    return () => clearTimeout(timeoutId);
+  }, [initialIndex, imageRefs]);
+
   // Adding key event listener on the component mount to handle the keyboard navigation
 
   // Hook to handle window resize events and detect orientation changes.
@@ -70,17 +98,23 @@ DECLARING EFFECTS
     setViewportHeight();
   }, []);
 
+  // Hook to handle window resize events and detect orientation changes.
+
   useEffect(() => {
-    console.log("Initial setup effect A was triggered");
+    console.log("Initial setup effect  was triggered");
+
     const determineAndSetOrientation = () => {
       const newOrientation =
         window.innerHeight > window.innerWidth ? "portrait" : "landscape";
       if (newOrientation !== orientation) {
-        console.log("Orientation has changed");
+        if (orientation == "") {
+          console.log(`Initial orientation has been set to ${newOrientation}`);
+        }
+
         document.body.setAttribute("data-orientation", newOrientation);
         setOrientation(newOrientation);
         // triggers recentering on orientation change only if the orientation has already been set and then changed
-        if (orientation !== "") {
+        if (orientation !== "" && orientation !== newOrientation) {
           setOrientationHasChanged(true);
         }
       }
@@ -502,6 +536,10 @@ DECLARING EFFECTS
     }
   };
 
+  const handleCloseModal = () => {
+    dispatch(closeModal());
+  };
+
   return (
     <div
       className={styles.galleryWrapper}
@@ -511,6 +549,10 @@ DECLARING EFFECTS
       onPointerUp={onPointerUpWindowHandler}
       onWheel={onWheelWindowHandler}
     >
+      <button className={styles.closeButton} onClick={handleCloseModal}>
+        {" "}
+        &times; {/* Close button */}
+      </button>
       <div className={styles.mainImageContainer} ref={mainImageContainerRef}>
         {imageModules[currentImageIndex] && (
           <img

@@ -1,7 +1,13 @@
-import { LightboxModal } from "@/features/gallery";
+import { MainGallery } from "@/features/MainGallery";
+import { ReduxReactPortalModalRenderer } from "@/features/GlobalModalSelector";
 
 function App() {
-  return <LightboxModal />;
+  return (
+    <>
+      <ReduxReactPortalModalRenderer />
+      <MainGallery />
+    </>
+  );
 }
 
 export default App;
