@@ -32,7 +32,7 @@ export const LightboxModal = () => {
 DECLARING STATE VARIABLES
 *****************************************************/
 
-  const initialIndex = useSelector((state) => state.modals.initialIndex);
+  const initialIndex = useSelector((state: any) => state.modals.initialIndex);
 
   console.log("Initial index is", initialIndex);
 
@@ -58,6 +58,7 @@ DECLARING STATE VARIABLES
   const galleryContainerWrapperRef = useRef<HTMLDivElement>(null);
   const slideRightIconRef = useRef<HTMLButtonElement>(null);
   const slideLeftIconRef = useRef<HTMLButtonElement>(null);
+  const exitFullScreenButtonRef = useRef<HTMLButtonElement>(null);
 
   /*****************************************************
 DECLARING EFFECTS
@@ -362,35 +363,43 @@ DECLARING EFFECTS
     }
   }, [currentImageIndex, imageRefs]);
 
-  useEffect(() => {
-    // Create an event handler
+  // Handler for closing the modal
+  const handleCloseModal = () => {
+    dispatch(closeModal());
+  };
 
-    const handleKeyDown = (event: KeyboardEvent) => {
+  const handleKeyDown = useCallback(
+    (event: KeyboardEvent) => {
       console.log("Keydown event was triggered", event);
-
-      // Repeat keydown events should be ignored since continous pressing will mess up function calls
-
       if (event.repeat) {
-        console.log("Keydown event was triggered but it was a repeat event");
         return;
       }
-
-      if (event.key === "ArrowRight") {
-        onSlideRightClick();
-      } else if (event.key === "ArrowLeft") {
-        onSlideLeftClick();
-      } else {
-        console.log("Keydown event was triggered but no action was taken");
+      // Repeat keydown events should be ignored since continous pressing will mess up function calls
+      switch (event.key) {
+        case "Escape":
+          handleCloseModal();
+          break;
+        case "ArrowRight":
+          onSlideRightClick();
+          break;
+        case "ArrowLeft":
+          onSlideLeftClick();
+          break;
+        default:
+          break;
       }
-    };
+    },
+    [handleCloseModal, onSlideLeftClick, onSlideRightClick]
+  ); // Add an empty array as the second argument
+
+  useEffect(() => {
     // Add the event listener to the window
     window.addEventListener("keydown", handleKeyDown);
-
     // Remove the event listener when the component is unmounted
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [onSlideRightClick, onSlideLeftClick]);
+  }, [handleKeyDown]);
 
   /*****************************************************
   CODE BLOCK RESPONSIBLE FOR MAIN IMAGE TRANSLATE AND SCROLL ZOOM ON CURSOR
@@ -462,7 +471,8 @@ DECLARING EFFECTS
       mainImageContainerRef.current &&
       galleryContainerWrapperRef.current &&
       slideLeftIconRef.current &&
-      slideRightIconRef.current
+      slideRightIconRef.current &&
+      exitFullScreenButtonRef.current
     ) {
       if (zoomLevel > 1) {
         // mainImageContainerRef.current.style.gridArea = `1 / 1 / -1 / -1`;
@@ -470,6 +480,7 @@ DECLARING EFFECTS
         galleryContainerWrapperRef.current.style.opacity = "0";
         slideLeftIconRef.current.style.visibility = "hidden";
         slideRightIconRef.current.style.visibility = "hidden";
+        exitFullScreenButtonRef.current.style.visibility = "visible";
       } else {
         // mainImageContainerRef.current.style.gridArea = `1 / 2 / 2 / 3`;
         galleryContainerWrapperRef.current.style.transform = "translateY(0)";
@@ -478,6 +489,7 @@ DECLARING EFFECTS
         galleryContainerWrapperRef.current.style.opacity = "1";
         slideLeftIconRef.current.style.visibility = "visible";
         slideRightIconRef.current.style.visibility = "visible";
+        exitFullScreenButtonRef.current.style.visibility = "hidden";
         setScrollZoomfunctionality(false);
         setPointerWasDownWindow(false);
       }
@@ -493,6 +505,15 @@ DECLARING EFFECTS
   ]);
 
   // Handler for the wheel event on the window to trigger the zoom functionality
+
+  const exitFullScreenHandler = () => {
+    setZoomLevel(1);
+    if (mainImageContainerRef.current) {
+      mainImageContainerRef.current.style.transform = `translate(0 px) scale(1})`;
+    }
+
+    zoomLevelRef.current = 1;
+  };
 
   const onWheelWindowHandler = (event: React.WheelEvent<HTMLDivElement>) => {
     triggerZoomFunctionality.current = true;
@@ -536,9 +557,7 @@ DECLARING EFFECTS
     }
   };
 
-  const handleCloseModal = () => {
-    dispatch(closeModal());
-  };
+  // handler for pinch zoom functionality
 
   return (
     <div
@@ -552,6 +571,13 @@ DECLARING EFFECTS
       <button className={styles.closeButton} onClick={handleCloseModal}>
         {" "}
         &times; {/* Close button */}
+      </button>
+      <button
+        onPointerDown={exitFullScreenHandler}
+        ref={exitFullScreenButtonRef}
+        className={styles.exitFullScreenButton}
+      >
+        <h6>Exit Full Screen</h6>
       </button>
       <div className={styles.mainImageContainer} ref={mainImageContainerRef}>
         {imageModules[currentImageIndex] && (

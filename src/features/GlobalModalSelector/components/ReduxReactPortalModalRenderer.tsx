@@ -1,7 +1,7 @@
-import { useSelector, useDispatch } from "react-redux";
+import { useSelector } from "react-redux";
 import { ReactPortalInitiator } from "./ReactPortalInitiator";
 import { LightboxModal } from "@/features/LightboxModal";
-import { closeModal } from "@/store/slices/modalSlice";
+
 import { RootState } from "@/store/store";
 
 export const ReduxReactPortalModalRenderer = () => {

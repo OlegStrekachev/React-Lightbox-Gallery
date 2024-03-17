@@ -18,7 +18,7 @@ export const MainGallery = () => {
   const dispatch = useDispatch();
   const handleClick = (event: React.MouseEvent<HTMLImageElement>) => {
     const target = event.target as HTMLImageElement;
-    const initialIndex = target.dataset.index;
+    const initialIndex = parseInt(target.dataset.index || "0");
     console.log(target.dataset.index);
     dispatch(
       openModal({
@@ -28,16 +28,19 @@ export const MainGallery = () => {
     );
   };
   return (
-    <div className={styles.galleryGrid}>
-      {imageModules.map((imageModule, index) => (
-        <img
-          key={index}
-          onClick={handleClick}
-          src={imageModule.default}
-          alt={`Image ${index}`}
-          data-index={index}
-        />
-      ))}
+    <div className={styles.gridContainer}>
+      <div className={styles.galleryGrid}>
+        {imageModules.map((imageModule, index) => (
+          <img
+            key={index}
+            onClick={handleClick}
+            src={imageModule.default}
+            alt={`Image ${index}`}
+            data-index={index}
+            loading="lazy"
+          />
+        ))}
+      </div>
     </div>
   );
 };

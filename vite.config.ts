@@ -7,6 +7,7 @@ export default defineConfig({
     // Replace with ENV variable
     host: "0.0.0.0",
   },
+  base: "/react-lightbox/",
   plugins: [react()],
   resolve: {
     alias: {

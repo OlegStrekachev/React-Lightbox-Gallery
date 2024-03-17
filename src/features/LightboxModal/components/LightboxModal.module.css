@@ -108,6 +108,20 @@
   justify-content: center;
   align-items: center;
 }
+.exitFullScreenButton {
+  position: absolute;
+  padding-top: 1rem;
+  top: 0;
+  right: 50%;
+  transform: translateX(50%);
+  cursor: pointer;
+  background: none;
+  transition: color 0.3s;
+  font-size: 3rem;
+  color: white;
+  border: none;
+  z-index: 1;
+}
 
 .slideRightIcon > img,
 .slideLeftIcon > img {
