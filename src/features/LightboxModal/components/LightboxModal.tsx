@@ -509,10 +509,10 @@ DECLARING EFFECTS
   const exitFullScreenHandler = () => {
     setZoomLevel(1);
     if (mainImageContainerRef.current) {
-      mainImageContainerRef.current.style.transform = `translate(0 px) scale(1})`;
+      mainImageContainerRef.current.style.transform = `translate(0px) scale(1)`;
     }
 
-    zoomLevelRef.current = 1;
+    zoomLevelRef.current = 1; // Update the current zoom level stored in the ref
   };
 
   const onWheelWindowHandler = (event: React.WheelEvent<HTMLDivElement>) => {
@@ -577,7 +577,7 @@ DECLARING EFFECTS
         ref={exitFullScreenButtonRef}
         className={styles.exitFullScreenButton}
       >
-        <h6>Exit Full Screen</h6>
+        <h4>Exit Full Screen </h4>
       </button>
       <div className={styles.mainImageContainer} ref={mainImageContainerRef}>
         {imageModules[currentImageIndex] && (
