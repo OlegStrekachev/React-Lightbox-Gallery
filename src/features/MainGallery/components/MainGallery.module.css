@@ -1,13 +1,13 @@
 .gridContainer {
-  width: 100%;
+  width: auto;
   display: flex;
   justify-content: center;
 }
 
 .galleryGrid {
-  width: 60%;
+  max-width: 1200px;
   display: grid;
-  grid-template-columns: repeat(3, minmax(150px, 1fr));
+  grid-template-columns: repeat(3, 1fr);
   grid-gap: 1rem;
   margin: 1rem;
 }
