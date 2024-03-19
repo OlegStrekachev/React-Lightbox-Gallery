@@ -122,7 +122,8 @@
   transition: color 0.3s;
   font-size: 3rem;
   color: white;
-  border: none;
+  border: 1px, solid, white;
+  border-radius: 1rem;
   z-index: 1;
 }
 

@@ -32,6 +32,7 @@ const imageModules: ImageModule[] = Object.values(moduleFiles);
 
 export const LightboxModal = () => {
   const dispatch = useDispatch();
+
   /*****************************************************
 DECLARING STATE VARIABLES
 *****************************************************/
@@ -67,7 +68,7 @@ DECLARING STATE VARIABLES
   const slideLeftIconRef = useRef<HTMLButtonElement>(null);
   const exitFullScreenButtonRef = useRef<HTMLButtonElement>(null);
 
-  /*****************************************************
+  /******************************************************
 DECLARING EFFECTS
 *****************************************************/
   // Setting up the initial index of the image to be displayed in the lightbox
@@ -222,13 +223,12 @@ DECLARING EFFECTS
   const scrollImageToCenter = (image: HTMLImageElement) => {
     console.log("scrollImageToCenter function was called");
     if (galleryContainerRef.current && image) {
-      setTimeout(() => {}, 100);
       const imageRect = image.getBoundingClientRect();
       const imageCenter = imageRect.left + imageRect.width / 2;
-      console.log("Image center is from function", imageCenter);
-      console.log("Image width is from function", imageRect.width);
+      // console.log("Image center is from function", imageCenter);
+      // console.log("Image width is from function", imageRect.width);
       const middleOfTheViewport = window.innerWidth / 2;
-      console.log("Viewport width is from function", window.innerWidth);
+      // console.log("Viewport width is from function", window.innerWidth);
 
       // Retrieving the current translateX value of the gallery container from the real dom (returnx matrix)
 
@@ -245,30 +245,31 @@ DECLARING EFFECTS
       console.log("New translateX value is", newTranslateX);
       galleryContainerRef.current.style.transform = `translateX(${newTranslateX}px)`;
     }
-  }; // Add an empty array as the second argument to useCallback
+  };
 
   /*****************************************************
   DEFINING EVENT HANDLERS FOR THE GALLERY PREVIEW CONTAINER
 *****************************************************/
 
-  // defining click and drag events handlers for the gallery container
+  // Defining click and drag events handlers for the gallery container
 
   const onPointerDown = (event: React.MouseEvent<HTMLDivElement>) => {
     event.stopPropagation();
     console.log("Pointer down event was triggered");
     if (galleryContainerRef.current) {
       // Resetting the transition property of the gallery container to none to prevent the gallery from delayed response to the
-      // user interaction (dragging) when the user starts dragging the gallery container
+      // user interaction (dragging) due to animation timing when the user starts dragging the gallery container
       galleryContainerRef.current.style.transition = "none";
       // Recording start of user interaction
       setMouseWasDown(true);
       // Recording the starting position of the pointer cursor at the start of the user interaction
       setMoveStartX(event.clientX);
-
+      // Retrieving the current translateX value of the gallery container from the real dom (returnx matrix)
       const cssMatrix = new DOMMatrixReadOnly(
         galleryContainerRef.current.style.transform
       );
       const curernTranslateX = cssMatrix.m41;
+      // Recording the starting value of translateX to the state variable
       setContainerStartX(curernTranslateX);
     } else {
       console.log("The element is not rendered yet or the ref is not attached");
@@ -280,14 +281,17 @@ DECLARING EFFECTS
     // Check if the mouse was down before the move event
     if (mouseWasDown) {
       const movementDistance = event.clientX - moveStartX;
+      // Running the function to find the closest image to the center of the viewport and update the current image index state
       findClosestImageIndex();
       // Update the translateX value of the gallery container to move it
       if (galleryContainerRef.current !== null) {
+        // Here we using previously recorded starting translateX value and the movement distance to calculate the new translateX value
         galleryContainerRef.current.style.transform = `translateX(${
           containerStartX + movementDistance
         }px)`;
-        // Check if any significant movement has been made
+        // Check if any significant movement has been made to determine click/drag action
         if (Math.abs(movementDistance) >= 4 && !isDragging) {
+          // If the movement distance is greater than 4 pixels, the drag action is considered to be started
           setIsDragging(true);
           console.log("Drag action was started");
         }
@@ -314,6 +318,8 @@ DECLARING EFFECTS
       galleryContainerRef.current.style.transition =
         "transform 0.2s ease-in-out";
       console.log("Click is registered");
+      // This condition prevents the gallety from scrolling if click was registered on something other than an image
+      // And delegates event handling for children img to the parent gallery container
       if (event.target instanceof HTMLImageElement) {
         // The click occurred on an image
         console.log("Image was clicked", event.target);
@@ -335,6 +341,8 @@ DECLARING EFFECTS
     }
   };
 
+  // Handles scenario when user initiated drag action and then pointer leaves the gallery container
+
   const onPointerLeave = () => {
     // Terminate the drag action and calulations of the movement distance when the pointer leaves the gallery container
     if (isDragging && galleryContainerRef.current !== null && mouseWasDown) {
@@ -344,6 +352,7 @@ DECLARING EFFECTS
       setIsDragging(false);
       setMouseWasDown(false);
       console.log("Cursor left the container");
+      // Set the transition property to css animation to make the gallery container scroll smoothly to the closest image on pointer leave
       galleryContainerRef.current.style.transition = "transform 0.1s ease-out";
       const imageOnPointerLeave = imageRefs.get(currentImageIndex);
       if (imageOnPointerLeave !== undefined) {
@@ -351,6 +360,9 @@ DECLARING EFFECTS
       }
     }
   };
+
+  // Handles the click event on the slide right button
+  // Wrapped in useCallback to prevent unnecessary re-renders since it is used as a dependency in the useEffect later
 
   const onSlideRightClick = useCallback(() => {
     console.log("Slide right button was clicked");
@@ -367,6 +379,8 @@ DECLARING EFFECTS
       setCurrentImageIndex(nextIndex);
     }
   }, [currentImageIndex, imageRefs, imageModules.length]);
+
+  // Handles the click event on the slide left button
 
   const onSlideLeftClick = useCallback(() => {
     console.log("Slide left button was clicked");
@@ -386,13 +400,16 @@ DECLARING EFFECTS
     dispatch(closeModal());
   };
 
+  // Handler for the various keydown events
+
   const handleKeyDown = useCallback(
     (event: KeyboardEvent) => {
       console.log("Keydown event was triggered", event);
+      // Repeat keydown events should be ignored since continous pressing will mess up function calls
       if (event.repeat) {
         return;
       }
-      // Repeat keydown events should be ignored since continous pressing will mess up function calls
+
       switch (event.key) {
         case "Escape":
           handleCloseModal();
@@ -408,7 +425,9 @@ DECLARING EFFECTS
       }
     },
     [handleCloseModal, onSlideLeftClick, onSlideRightClick]
-  ); // Add an empty array as the second argument
+  );
+
+  // Hook to add the event listener to the window for the keydown event
 
   useEffect(() => {
     // Add the event listener to the window
@@ -431,6 +450,7 @@ DECLARING EFFECTS
   const [currentTransformStart, setCurrentTransformStart] = useState([0, 0]);
 
   // Three event handlers responsible for pannning while in the full screen zoom mode
+  // They are specifically attached to the window to enable full screen panning and zooming user experience
 
   const onPointerDownWindowHandler = (
     event: React.PointerEvent<HTMLDivElement>
@@ -483,6 +503,7 @@ DECLARING EFFECTS
   const triggerZoomFunctionality = useRef(false);
 
   // Effect responsible for tracking and initiating of full screen zoom and pan functionality
+  // It is triggered when the zoom level changes from 1 to a value greater than 1 and vice versa
 
   useEffect(() => {
     if (
@@ -494,13 +515,17 @@ DECLARING EFFECTS
     ) {
       if (zoomLevel > 1) {
         // mainImageContainerRef.current.style.gridArea = `1 / 1 / -1 / -1`;
+        // Moves gallery preview container off the screen and makes it invisible
         galleryContainerWrapperRef.current.style.transform = "translateY(100%)";
         galleryContainerWrapperRef.current.style.opacity = "0";
+        // Hides the slide left and right buttons
         slideLeftIconRef.current.style.visibility = "hidden";
         slideRightIconRef.current.style.visibility = "hidden";
+        // Shows the exit full screen button
         exitFullScreenButtonRef.current.style.visibility = "visible";
       } else {
         // mainImageContainerRef.current.style.gridArea = `1 / 2 / 2 / 3`;
+        // Returns the gallery preview container to the initial position and scale and makes it visible
         galleryContainerWrapperRef.current.style.transform = "translateY(0)";
         mainImageContainerRef.current.style.transform =
           "translate(0, 0) scale(1)";
@@ -522,7 +547,7 @@ DECLARING EFFECTS
     mainImageContainerRef,
   ]);
 
-  // Handler for the wheel event on the window to trigger the zoom functionality
+  // Handler for the exit full screen button
 
   const exitFullScreenHandler = () => {
     setZoomLevel(1);
@@ -533,6 +558,8 @@ DECLARING EFFECTS
     // Update the current zoom level stored in the ref
     zoomLevelRef.current = 1;
   };
+
+  // Handler for the wheel scroll event on the window
 
   const onWheelWindowHandler = (event: React.WheelEvent<HTMLDivElement>) => {
     triggerZoomFunctionality.current = true;
@@ -545,6 +572,7 @@ DECLARING EFFECTS
 
     const minZoom = 1;
     const maxZoom = 4;
+    // It works but my brain is too small to understand exactly how it works
     newZoomValue = Math.min(Math.max(minZoom, newZoomValue), maxZoom);
     setZoomLevel(newZoomValue);
     setScrollZoomfunctionality(true);
@@ -576,7 +604,7 @@ DECLARING EFFECTS
     }
   };
 
-  // handler for pinch zoom functionality
+  // Handler for pinch zoom functionality on touch devices (Coming Soon™)
 
   return (
     <div
