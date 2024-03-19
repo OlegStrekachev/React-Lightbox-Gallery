@@ -5,6 +5,7 @@ interface ReactPortalInitiatorProps {
   children: ReactNode;
 }
 
+// This component is used to create a portal to the modal-root element in the index.html file
 export const ReactPortalInitiator = ({
   children,
 }: ReactPortalInitiatorProps) => {

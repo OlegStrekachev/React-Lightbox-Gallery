@@ -20,6 +20,7 @@ export const MainGallery = () => {
     const target = event.target as HTMLImageElement;
     const initialIndex = parseInt(target.dataset.index || "0");
     console.log(target.dataset.index);
+    // sending the initial index to the redux store
     dispatch(
       openModal({
         modalType: "openLightboxGallery",
