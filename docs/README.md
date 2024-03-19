@@ -4,7 +4,14 @@ Built using Vite as the build tool and Redux Toolkit for state management, this 
 
 Follow this link to see a live example of how it looks like [[Live version]](https://strekachev.com/react-lightbox/ "Live working version")
 
-## Key Features
+## Technology used 🔧
+
+- **React**
+- **Vite**
+- **Redux-toolkit**
+- **Typescript**
+
+## Key Features ⭐
 
 ### Interactive Navigation
 
@@ -26,7 +33,7 @@ Follow this link to see a live example of how it looks like [[Live version]](htt
 
 - By leveraging Redux Toolkit, the gallery benefits from a unified state management system. This setup is ideal for managing modal states within complex applications, ensuring that the gallery operates seamlessly within the broader application context. Although designed with Redux in mind, the architecture is flexible enough to be modified for use without Redux, catering to a wide range of application needs.
 
-## Boilerplate configurations I have to write down to remember next time I open this.
+## Boilerplate configurations I have to write down to remember 🤯
 
 ### TypeScript Setup (`tsconfig.json`):
 
