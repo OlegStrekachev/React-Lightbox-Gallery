@@ -1,15 +1,19 @@
+// We use css modules to style the component
 import styles from "./LightboxModal.module.css";
+// React specific imports
 import { useRef, useState, useEffect, useCallback } from "react";
-import SlideRightIcon from "../assets/vector/slideRightIcon.svg";
+// Redux specific imports
 import { useSelector, useDispatch } from "react-redux";
 import { closeModal } from "@/store/slices/modalSlice";
+// Components imports
+import SlideRightIcon from "../assets/vector/slideRightIcon.svg";
 
 // Explicitly stating the expected structure of the imported modules
 type ImageModule = {
   default: string;
 };
 
-// Use import.meta.glob with the { eager: true } option
+// Use import.meta.glob with the { eager: true } option to import all the images in the assets folder
 const moduleFiles = import.meta.glob("../assets/*.jpg", {
   eager: true,
 }) as Record<string, ImageModule>;
@@ -32,6 +36,8 @@ export const LightboxModal = () => {
 DECLARING STATE VARIABLES
 *****************************************************/
 
+  // Initial index is the index of the image that was clicked to open the lightbox
+
   const initialIndex = useSelector((state: any) => state.modals.initialIndex);
 
   console.log("Initial index is", initialIndex);
@@ -40,6 +46,7 @@ DECLARING STATE VARIABLES
 
   const [orientation, setOrientation] = useState<string>("");
   const [orientationHasChanged, setOrientationHasChanged] = useState(false);
+
   // Defining state variables
 
   const [containerStartX, setContainerStartX] = useState<number>(0);
@@ -63,12 +70,14 @@ DECLARING STATE VARIABLES
   /*****************************************************
 DECLARING EFFECTS
 *****************************************************/
-
-  // Hook to set up initial index of the lightbox
+  // Setting up the initial index of the image to be displayed in the lightbox
 
   useEffect(() => {
     setCurrentImageIndex(Number(initialIndex));
   }, [initialIndex]);
+
+  // Effect to center the image closest to the center of the viewport after the initial load.
+  //This solution is not perfect (timeout magic) but it is the only working solution I could come up with
 
   useEffect(() => {
     // This assumes initialIndex and images are set correctly and are available
@@ -85,9 +94,8 @@ DECLARING EFFECTS
     return () => clearTimeout(timeoutId);
   }, [initialIndex, imageRefs]);
 
-  // Adding key event listener on the component mount to handle the keyboard navigation
-
-  // Hook to handle window resize events and detect orientation changes.
+  // Hook to handle window resize events and detect orientation changes on initial load
+  // This  was necessary to avoid mobile browsers' address bars covering the content.
 
   useEffect(() => {
     // setting viewport height on initial load
@@ -104,30 +112,37 @@ DECLARING EFFECTS
   useEffect(() => {
     console.log("Initial setup effect  was triggered");
 
+    // Handler function for the orientation change
+
     const determineAndSetOrientation = () => {
       const newOrientation =
         window.innerHeight > window.innerWidth ? "portrait" : "landscape";
       if (newOrientation !== orientation) {
+        // Runs only on initial load
         if (orientation == "") {
           console.log(`Initial orientation has been set to ${newOrientation}`);
         }
+        // Runs on every orientation change
 
         document.body.setAttribute("data-orientation", newOrientation);
         setOrientation(newOrientation);
-        // triggers recentering on orientation change only if the orientation has already been set and then changed
+        // triggers recentering on orientation change only on orientation chnanges after the initial load
         if (orientation !== "" && orientation !== newOrientation) {
           setOrientationHasChanged(true);
         }
       }
     };
 
+    // Handler function for the resize event
+
     const setViewportHeight = () => {
-      console.log("Viewport resize event was triggered");
       const vh = window.innerHeight * 0.01;
       console.log(window.innerHeight, "before");
       document.documentElement.style.setProperty("--vh", `${vh}px`);
       console.log(window.innerHeight, "after");
     };
+
+    // Combined handler for handling the resize and orientation change events
 
     const handleResize = () => {
       setViewportHeight();
@@ -135,18 +150,21 @@ DECLARING EFFECTS
       console.log("Resize event was triggered");
     };
 
-    determineAndSetOrientation(); // Call this from the hook itself to setup  the initial orientation
+    // Call this from the hook itself to setup  the initial orientation
+    determineAndSetOrientation();
+
+    // Add the event listener to the window to listen for the resize event and execute the handleResize function on resize event
 
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, [orientation]);
 
-  // Hook to react to the orientation change and center the image closest to the center of the viewport.
+  // Hook to react to the orientation change and center the image closest to the center of the viewport on orientation change (not on initial load)
 
   useEffect(() => {
     if (orientationHasChanged) {
       console.log(
-        "Block responsible for centering the image after orientation chnage was executed"
+        "Block responsible for centering the image after orientation change was executed"
       );
       const image = imageRefs.get(currentImageIndex);
       if (image) {
@@ -508,11 +526,12 @@ DECLARING EFFECTS
 
   const exitFullScreenHandler = () => {
     setZoomLevel(1);
+    // Reseting the transform of the main image container to the initial state in order to avoid a jump on next zoom since transforms got memorized.
     if (mainImageContainerRef.current) {
       mainImageContainerRef.current.style.transform = `translate(0px) scale(1)`;
     }
-
-    zoomLevelRef.current = 1; // Update the current zoom level stored in the ref
+    // Update the current zoom level stored in the ref
+    zoomLevelRef.current = 1;
   };
 
   const onWheelWindowHandler = (event: React.WheelEvent<HTMLDivElement>) => {
