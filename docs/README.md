@@ -33,6 +33,16 @@ Follow this link to see a live example of how it looks like [[Live version]](htt
 
 - By leveraging Redux Toolkit, the gallery benefits from a unified state management system. This setup is ideal for managing modal states within complex applications, ensuring that the gallery operates seamlessly within the broader application context. Although designed with Redux in mind, the architecture is flexible enough to be modified for use without Redux, catering to a wide range of application needs.
 
+## Potential issues
+
+- The modal window currently employs a timeout function (line 85-ish) as a workaround to address challenges with executing layout functions upon component mounting. This approach aims to give the DOM time to stabilize before manipulation. However, a more robust solution is likely available that can enhance efficiency and reliability.
+
+- My Typescript types might be a bit wacky since I am still learning typescript.
+
+## Room for improvement
+
+- There is a need for a pinch zoom functionality for mobile devices. Soon™
+
 ## Boilerplate configurations I have to write down to remember 🤯
 
 ### TypeScript Setup (`tsconfig.json`):
