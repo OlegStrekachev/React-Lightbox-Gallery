@@ -572,7 +572,7 @@ DECLARING EFFECTS
 
     const minZoom = 1;
     const maxZoom = 4;
-    // It works but my brain is too small to understand exactly how it works
+    // Here we offset gallery image container on zoom in order to keep the zoom centered on the cursor after zooming
     newZoomValue = Math.min(Math.max(minZoom, newZoomValue), maxZoom);
     setZoomLevel(newZoomValue);
     setScrollZoomfunctionality(true);
@@ -604,7 +604,7 @@ DECLARING EFFECTS
     }
   };
 
-  // Handler for pinch zoom functionality on touch devices (Coming Soon™)
+  // Handler for pinch zoom functionality on touch devices
 
   return (
     <div
