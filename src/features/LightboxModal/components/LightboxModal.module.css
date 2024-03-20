@@ -113,6 +113,7 @@
   display: flex;
   justify-content: center;
   align-items: center;
+  margin-top: 1rem;
   padding: 1rem;
   top: 0;
   right: 50%;
@@ -120,7 +121,7 @@
   cursor: pointer;
   background-color: rgba(32, 32, 32, 0.5);
   transition: color 0.3s;
-  font-size: 3rem;
+  font-size: 1rem;
   color: white;
   border: 1px, solid, white;
   border-radius: 1rem;
@@ -159,6 +160,12 @@
   }
   to {
     opacity: 1;
+  }
+}
+
+@media screen and (min-width: 768px) {
+  .exitFullScreenButton {
+    font-size: 3rem;
   }
 }
 
