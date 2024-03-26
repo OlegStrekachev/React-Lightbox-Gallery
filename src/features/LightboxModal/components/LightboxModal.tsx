@@ -13,6 +13,8 @@ type ImageModule = {
   default: string;
 };
 
+// Saved a coment
+
 // Use import.meta.glob with the { eager: true } option to import all the images in the assets folder
 const moduleFiles = import.meta.glob("../assets/*.jpg", {
   eager: true,
@@ -560,6 +562,7 @@ DECLARING EFFECTS
   };
 
   // Handler for the wheel scroll event on the window
+  // Comment
 
   const onWheelWindowHandler = (event: React.WheelEvent<HTMLDivElement>) => {
     triggerZoomFunctionality.current = true;
